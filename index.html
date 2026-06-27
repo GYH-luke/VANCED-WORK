@@ -4154,6 +4154,7 @@
             <div id="taskAdvertiserSuggest" class="advertiser-suggest-list" hidden></div>
           </div>
           <button class="btn primary" type="submit">업무 추가</button>
+          <button class="btn" type="button" data-action="open-advertiser-dialog">광고주 추가</button>
 
           <details class="quick-extra">
             <summary>더 입력하기</summary>
@@ -5474,27 +5475,7 @@
           ${advertiserRows}`;
       }).join('');
 
-      const unassignedSection = unassigned.length
-        ? (() => {
-            const sectionClass = `assignee-section-row assignee-section-${orderedIds.length % 4} is-unassigned-section`;
-            const advertisers = getAdvertisers(unassigned).filter(adv => unassigned.some(t => t.advertiser === adv));
-            const advertiserRows = advertisers.map((adv, i) => renderAdvertiserGroup(unassigned.filter(t => t.advertiser === adv), adv, i, sectionClass)).join('');
-            const separator = orderedIds.length ? '<tr class="daily-section-separator"><td colspan="11"></td></tr>' : '';
-            return `${separator}
-              <tr class="daily-assignee-top ${sectionClass}">
-                <td colspan="11">
-                  <div class="daily-assignee-top-header is-unassigned">
-                    <span class="daily-assignee-avatar" aria-hidden="true">?</span>
-                    <span class="daily-assignee-heading">
-                      <small>담당자 섹션</small>
-                      <strong class="daily-assignee-top-name">미배정</strong>
-                    </span>
-                  </div>
-                </td>
-              </tr>
-              ${advertiserRows}`;
-          })()
-        : '';
+      const unassignedSection = '';
 
       return assigneeSections + unassignedSection;
     }
@@ -6831,6 +6812,7 @@
         if (action === 'close-confirm') closeConfirm();
         if (action === 'close-advertiser-dialog') closeAdvertiserDialog();
         if (action === 'close-advertiser-picker') closeAdvertiserPicker();
+        if (action === 'open-advertiser-dialog') openAdvertiserDialog(null);
         if (action === 'open-advertiser-picker') openAdvertiserPicker(target.dataset.taskId, target);
         if (action === 'add-advertiser-from-picker') {
           state.pendingAdvertiserTaskId = state.advertiserPickerTaskId;
