@@ -5321,7 +5321,7 @@
       const savedHideDone = state.filters.hideDone;
       state.filters.status = 'all';
       state.filters.hideDone = false;
-      const base = applyFilters(getBaseTasks());
+      const base = applyFilters(getBaseTasks()).filter(task => isMine(task));
       state.filters.status = savedStatus;
       state.filters.hideDone = savedHideDone;
 
