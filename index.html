@@ -164,6 +164,7 @@
       min-height: 36px; padding: 0 18px; border: 0;
       border-radius: var(--pill); background: transparent;
       color: var(--muted); font-size: 13px; font-weight: 700;
+      white-space: nowrap;
       transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
     }
     .tab[aria-current="page"] {
@@ -6490,11 +6491,6 @@
 
     function openDailyAiDialog() {
       const today = toDateKey(new Date());
-      const beforeCount = state.tasks.length;
-      materializeRoutinesForDate(today);
-      if (state.tasks.length !== beforeCount && state.view === 'daily') {
-        renderDailyOnly({ refreshShell: false, refreshOptions: true, refreshStats: true, animate: false });
-      }
       dom.dailyAiText.value = buildDailyAiText(today);
       if (!dom.dailyAiDialog.open) dom.dailyAiDialog.showModal();
       requestAnimationFrame(() => dom.dailyAiCopyBtn.focus());
@@ -6827,7 +6823,7 @@
         if (action === 'apply-advertiser-suggestion') {
           dom.taskAdvertiser.value = target.dataset.advertiserName || '';
           hideTaskAdvertiserSuggestions();
-          dom.taskTitle.focus();
+          dom.taskAdvertiser.focus();
           return;
         }
         if (action === 'select-advertiser') {
@@ -7097,7 +7093,54 @@
       dom.searchInput.addEventListener('input', event => { state.filters.query = event.target.value; render(); });
       dom.taskAdvertiser.addEventListener('input', renderTaskAdvertiserSuggestions);
       dom.taskAdvertiser.addEventListener('focus', renderTaskAdvertiserSuggestions);
-      dom.taskAdvertiser.addEventListener('blur', () => setTimeout(hideTaskAdvertiserSuggestions, 140));
+      dom.taskAdvertiser.addEventListener('keydown', event => {
+        const isOpen = !dom.taskAdvertiserSuggest.hidden;
+        if (!isOpen) return;
+        if (event.key === 'Tab' && !event.shiftKey) {
+          event.preventDefault();
+          const first = dom.taskAdvertiserSuggest.querySelector('button');
+          if (first) first.focus();
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          const first = dom.taskAdvertiserSuggest.querySelector('button');
+          if (first) first.focus();
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          const first = dom.taskAdvertiserSuggest.querySelector('button');
+          if (first) first.click();
+        } else if (event.key === 'Escape') {
+          hideTaskAdvertiserSuggestions();
+        }
+      });
+      dom.taskAdvertiserSuggest.addEventListener('keydown', event => {
+        const buttons = Array.from(dom.taskAdvertiserSuggest.querySelectorAll('button'));
+        const idx = buttons.indexOf(document.activeElement);
+        if (event.key === 'Tab' && !event.shiftKey) {
+          event.preventDefault();
+          if (idx < buttons.length - 1) buttons[idx + 1].focus();
+          else { hideTaskAdvertiserSuggestions(); dom.taskAdvertiser.focus(); }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+          event.preventDefault();
+          if (idx > 0) buttons[idx - 1].focus();
+          else { hideTaskAdvertiserSuggestions(); dom.taskAdvertiser.focus(); }
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          if (idx < buttons.length - 1) buttons[idx + 1].focus();
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          if (idx > 0) buttons[idx - 1].focus();
+          else dom.taskAdvertiser.focus();
+        } else if (event.key === 'Escape') {
+          hideTaskAdvertiserSuggestions();
+          dom.taskAdvertiser.focus();
+        }
+      });
+      dom.taskAdvertiser.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (dom.taskAdvertiserSuggest.contains(document.activeElement)) return;
+          hideTaskAdvertiserSuggestions();
+        }, 140);
+      });
       dom.filterAdvertiser.addEventListener('change', event => { state.filters.advertiser = event.target.value; render(); });
       dom.filterStatus.addEventListener('change', event => { state.filters.status = event.target.value; render(); });
       dom.filterPriority.addEventListener('change', event => { state.filters.priority = event.target.value; render(); });
