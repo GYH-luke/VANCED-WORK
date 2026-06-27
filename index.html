@@ -4010,7 +4010,7 @@
     .history-list { display: flex; flex-direction: column; gap: 2px; }
     .history-entry {
       display: grid;
-      grid-template-columns: 80px 110px 1fr;
+      grid-template-columns: 130px 110px 1fr auto;
       align-items: center;
       gap: 12px;
       padding: 10px 14px;
@@ -4020,6 +4020,16 @@
     }
     .history-entry:hover { background: var(--surface-muted); }
     .history-time { color: var(--muted-2); font-size: 12px; white-space: nowrap; }
+    .history-restore {
+      padding: 3px 10px; border-radius: var(--pill);
+      border: 1px solid var(--line-strong);
+      background: var(--surface); color: var(--ink-soft);
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .history-restore:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-line); }
+    .history-restore:disabled { opacity: 0.35; cursor: default; }
+    [data-theme="dark"] .history-restore { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: var(--muted); }
     .history-user {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 2px 8px; border-radius: var(--pill);
@@ -4307,7 +4317,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated">Updated 2026-06-27 08:10 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-27 20:37 KST</span>
     </div>
   </footer>
 
@@ -4564,6 +4574,7 @@
         user: CURRENT_USER,
         type,
         summary,
+        snapshot: { tasks: state.tasks },
       }).catch(() => {});
     }
     // ───────────────────────────────────────────────────────────────────
@@ -5886,15 +5897,11 @@
       function fmtTime(ts) {
         const d = new Date(ts);
         const now = new Date();
-        const diffMs = now - d;
-        const diffMin = Math.floor(diffMs / 60000);
-        if (diffMin < 1) return '방금';
-        if (diffMin < 60) return `${diffMin}분 전`;
         const isToday = d.toDateString() === now.toDateString();
         const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
         const isYesterday = d.toDateString() === yesterday.toDateString();
         const hhmm = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-        if (isToday) return hhmm;
+        if (isToday) return `오늘 ${hhmm}`;
         if (isYesterday) return `어제 ${hhmm}`;
         return `${d.getMonth()+1}/${d.getDate()} ${hhmm}`;
       }
@@ -5907,10 +5914,12 @@
       dom.historyList.innerHTML = entries.map(entry => {
         const meta = TYPE_META[entry.type] || { badge: 'import', label: entry.type };
         const userName = getUserDisplayName(entry.user);
-        return `<div class="history-entry">
+        const hasSnapshot = entry.snapshot && Array.isArray(entry.snapshot.tasks);
+        return `<div class="history-entry" data-history-key="${escapeHtml(entry.key)}">
           <span class="history-time">${fmtTime(entry.ts)}</span>
           <span class="history-user"><span class="history-badge ${meta.badge}"></span>${escapeHtml(userName)}</span>
           <span class="history-summary">${escapeHtml(entry.summary)}</span>
+          <button class="history-restore" type="button" data-action="restore-history" data-history-key="${escapeHtml(entry.key)}" ${hasSnapshot ? '' : 'disabled title="이전 기록은 스냅샷이 없어 복원할 수 없습니다"'}>복원</button>
         </div>`;
       }).join('');
     }
@@ -6232,6 +6241,26 @@
       showToast('루틴 반복을 해제했습니다. 현재 업무는 유지됩니다.');
     }
 
+    function restoreFromHistory(historyKey) {
+      const entry = state.history.find(e => e.key === historyKey);
+      if (!entry || !entry.snapshot || !Array.isArray(entry.snapshot.tasks)) {
+        showToast('이 시점의 스냅샷이 없어 복원할 수 없습니다.');
+        return;
+      }
+      const timeLabel = new Date(entry.ts).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+      requestConfirm(
+        '업무 복원',
+        `${timeLabel} 시점으로 모든 담당자의 업무를 복원합니다.\n현재 업무 데이터가 해당 시점으로 되돌아갑니다. 계속할까요?`,
+        () => {
+          state.tasks = entry.snapshot.tasks.map(normalizeTask);
+          save();
+          logHistory('IMPORT', `히스토리 복원 (${timeLabel} 시점)`);
+          render();
+          showToast('업무가 해당 시점으로 복원되었습니다.');
+        }
+      );
+    }
+
     function deleteTask(id) {
       const index = state.tasks.findIndex(task => task.id === id);
       if (index < 0) return;
@@ -6462,9 +6491,9 @@
       const grouped = new Map();
       tasks.forEach(task => {
         const raw = normalizeAdvertiserName(task.advertiser);
-        const advertiser = (!raw || isCommonRoutineAdvertiser(raw)) ? '기타' : raw;
-        if (!grouped.has(advertiser)) grouped.set(advertiser, []);
-        grouped.get(advertiser).push(task);
+        if (!raw || isCommonRoutineAdvertiser(raw)) return;
+        if (!grouped.has(raw)) grouped.set(raw, []);
+        grouped.get(raw).push(task);
       });
 
       [...grouped.keys()]
@@ -6848,6 +6877,7 @@
         }
         if (action === 'logout') { logout(); return; }
         const isReadonly = target.closest('.is-readonly');
+        if (action === 'restore-history') { restoreFromHistory(target.dataset.historyKey); return; }
         if (action === 'delete-task') { if (!isReadonly) deleteTask(target.dataset.taskId); return; }
         if (action === 'copy-task') { if (!isReadonly) copyTask(target.dataset.taskId); return; }
         if (action === 'toggle-adv-filter') {
