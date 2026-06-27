@@ -5043,6 +5043,7 @@
       const query = state.filters.query.trim().toLowerCase();
       const { start, end } = getFilterRange();
       return state.tasks.filter(task => {
+        if (!task.assignee) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
         if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
@@ -5061,6 +5062,7 @@
     function applyFilters(tasks) {
       const query = state.filters.query.trim().toLowerCase();
       return tasks.filter(task => {
+        if (!task.assignee) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
         if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
         if (state.filters.status !== 'all' && task.status !== state.filters.status) return false;
@@ -5321,7 +5323,7 @@
       const savedHideDone = state.filters.hideDone;
       state.filters.status = 'all';
       state.filters.hideDone = false;
-      const base = applyFilters(getBaseTasks()).filter(task => isMine(task));
+      const base = applyFilters(getBaseTasks()).filter(task => task.assignee === CURRENT_USER);
       state.filters.status = savedStatus;
       state.filters.hideDone = savedHideDone;
 
