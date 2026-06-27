@@ -3521,8 +3521,60 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-left: auto;
     }
+    .fbar-sp { flex: 1; min-width: 0; }
+
+    /* 인라인 stats (필터바 정중앙) */
+    .inline-stats {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--fbar-bg);
+      border: 1px solid var(--fbar-border);
+      border-radius: var(--pill);
+      box-shadow: var(--fbar-shadow);
+      backdrop-filter: var(--fbar-blur);
+      -webkit-backdrop-filter: var(--fbar-blur);
+      padding: 0 4px;
+      height: var(--fbar-h);
+      min-height: var(--fbar-h);
+      flex-shrink: 0;
+    }
+    .istat {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 9px;
+      height: 100%;
+      border-radius: var(--pill);
+      white-space: nowrap;
+    }
+    .istat em {
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: -0.01em;
+    }
+    .istat b {
+      font-size: 13px;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .istat.todo b { color: #8a5a00; }
+    .istat.todo em { color: #8a5a00; }
+    .istat.doing b { color: #0066cc; }
+    .istat.done b { color: #137333; }
+    .istat.done em { color: #137333; }
+    .istat.rate b { color: #137333; }
+    .istat + .istat { border-left: 1px solid var(--line); border-radius: 0; }
+    .istat:first-child { border-radius: var(--pill) 0 0 var(--pill); }
+    .istat:last-child  { border-radius: 0 var(--pill) var(--pill) 0; }
+    html[data-theme="dark"] .istat b { color: #e2e8f0; }
+    html[data-theme="dark"] .istat.todo b, html[data-theme="dark"] .istat.todo em { color: #fbbf24; }
+    html[data-theme="dark"] .istat.doing b { color: #60a5fa; }
+    html[data-theme="dark"] .istat.done b, html[data-theme="dark"] .istat.done em, html[data-theme="dark"] .istat.rate b { color: #4ade80; }
 
     /* 공통 pill 베이스 — select·check·btn 동일 토큰 */
     .filter-pill-select,
@@ -4158,8 +4210,6 @@
         </form>
       </section>
 
-      <section class="stats" id="stats" aria-label="업무 요약"></section>
-
       <section class="panel filters" aria-label="오늘 업무 필터">
         <div class="field">
           <label for="searchInput">업무</label>
@@ -4188,6 +4238,9 @@
             <button type="button" class="afg-btn" id="afgSearch" data-action="set-assignee-mode" data-mode="search">검색</button>
             <input type="text" id="assigneeSearchInput" class="afg-search" placeholder="이름 검색..." hidden />
           </div>
+          <span class="fbar-sp"></span>
+          <div class="inline-stats" id="stats" aria-label="업무 요약"></div>
+          <span class="fbar-sp"></span>
           <div class="daily-filter-extra">
             <button class="btn daily-ai-btn" type="button" data-action="open-daily-ai">daily ai</button>
             <select id="filterPriority" class="filter-pill-select" aria-label="우선순위 필터">
@@ -4260,7 +4313,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-27 20:37 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-27 21:15 KST</span>
     </div>
   </footer>
 
@@ -5250,7 +5303,7 @@
       dom.dailyView.hidden = state.view !== 'daily';
       dom.weeklyView.hidden = state.view !== 'weekly';
       dom.advertiserView.hidden = state.view !== 'advertiser';
-      dom.stats.hidden = state.view !== 'daily';
+      if (dom.stats) dom.stats.style.display = state.view === 'daily' ? '' : 'none';
       qs('.filters').hidden = state.view !== 'daily';
       dom.periodDateNav.hidden = false;
       dom.selectedStartDateInput.value = state.filters.startDate || state.selectedDate;
@@ -5332,10 +5385,11 @@
       const doing = base.filter(task => task.status === 'doing').length;
       const done = base.filter(task => task.status === 'done').length;
       dom.stats.innerHTML = `
-        <article class="stat"><span>전체</span><strong>${total}</strong></article>
-        <article class="stat todo"><span>시작전</span><strong>${todo}</strong></article>
-        <article class="stat doing"><span>진행중</span><strong>${doing}</strong></article>
-        <article class="stat done"><span>완료율</span><strong>${total ? Math.round(done / total * 100) : 0}%</strong></article>
+        <span class="istat"><em>전체</em><b>${total}</b></span>
+        <span class="istat todo"><em>시작전</em><b>${todo}</b></span>
+        <span class="istat doing"><em>진행중</em><b>${doing}</b></span>
+        <span class="istat done"><em>완료</em><b>${done}</b></span>
+        <span class="istat rate"><em>완료율</em><b>${total ? Math.round(done / total * 100) : 0}%</b></span>
       `;
     }
 
