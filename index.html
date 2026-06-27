@@ -4058,6 +4058,7 @@
   </style>
   <link rel="stylesheet" href="Daily_Work_v24.css?v=2401" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
@@ -4066,23 +4067,22 @@
     <div class="login-card">
       <div class="login-brand">
         <div>
-          <strong>Daily Work</strong>
-          <span>광고주 업무 관리</span>
+          <strong>Vanced Work</strong>
         </div>
       </div>
       <div class="login-fields">
         <div class="field">
-          <label for="loginName">영어 이름</label>
-          <input id="loginName" type="text" placeholder="예: Luke" autocomplete="username" />
+          <label for="loginName">계정 아이디</label>
+          <input id="loginName" type="text" placeholder="예: luke" autocomplete="username" autocapitalize="none" spellcheck="false" />
         </div>
         <div class="field">
           <label for="loginPass">비밀번호</label>
-          <input id="loginPass" type="password" placeholder="영어 이름과 동일" autocomplete="current-password" />
+          <input id="loginPass" type="password" placeholder="관리자에게 받은 비밀번호" autocomplete="current-password" />
         </div>
-        <div id="loginError" class="login-error" hidden>아이디 또는 비밀번호가 올바르지 않습니다.</div>
+        <div id="loginError" class="login-error" hidden>로그인할 수 없습니다. 아이디와 비밀번호를 확인해 주세요.</div>
         <button class="btn primary" type="button" id="loginBtn">로그인</button>
       </div>
-      <p class="login-hint">아이디와 비밀번호는 영어 이름입니다</p>
+      <p class="login-hint">회사에서 발급한 Firebase 계정으로 로그인합니다</p>
     </div>
   </div>
 
@@ -4115,7 +4115,8 @@
         <details class="action-menu">
           <summary aria-label="관리 메뉴">관리</summary>
           <div class="action-menu-panel">
-            <p class="management-note">자주 쓰지 않는 기능입니다.</p>
+             <p class="management-note">자주 쓰지 않는 기능입니다.</p>
+            <button class="btn" type="button" data-action="open-history">변경 이력</button>
             <button class="btn" type="button" data-action="import-json">불러오기</button>
             <button class="btn" type="button" data-action="export-json">내보내기</button>
             <button class="btn" type="button" data-action="clear-completed">완료 업무 정리</button>
@@ -4403,6 +4404,23 @@
     </div>
   </dialog>
 
+  <dialog id="historyDialog" class="history-dialog" aria-labelledby="historyTitle">
+    <div class="dialog-head history-dialog-head">
+      <div>
+        <h2 id="historyTitle">변경 이력</h2>
+        <p id="historyStatus">최근 변경 100건</p>
+      </div>
+      <button class="icon-action-btn" type="button" data-action="close-history" aria-label="닫기">×</button>
+    </div>
+    <div class="dialog-body">
+      <div id="historyList" class="history-list" aria-live="polite"></div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" data-action="refresh-history">새로고침</button>
+        <button class="btn primary" type="button" data-action="close-history">닫기</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="dailyAiDialog" class="daily-ai-dialog" aria-labelledby="dailyAiTitle">
     <div class="dialog-head daily-ai-dialog-head">
       <div>
@@ -4468,9 +4486,9 @@
       { id: 'rosie',  name: 'Rosie',  korean: '장예림' },
       { id: 'sonia',  name: 'Sonia',  korean: '유송이' },
     ];
-    const AUTH_KEY = 'adwork.auth.v1';
     const ADMIN_USER = 'luke';
     let CURRENT_USER = null;
+    let CURRENT_UID = null;
 
     function isAdmin() { return CURRENT_USER === ADMIN_USER; }
 
@@ -4513,7 +4531,7 @@
     const WEEKLY_FOCUS_KEY = 'adwork.weeklyFocus.v1';
     const ADVERTISER_KEY = 'adwork.advertisers.v1';
 
-    // ── Firebase Realtime Database ──────────────────────────────────────
+    // ── Firebase Auth + Realtime Database ───────────────────────────────
     firebase.initializeApp({
       apiKey: "AIzaSyA55LU7udcJc5Ok9W4LfQaL4XvaF4GyxAw",
       authDomain: "vanced-work.firebaseapp.com",
@@ -4523,35 +4541,264 @@
       messagingSenderId: "962571543204",
       appId: "1:962571543204:web:72a8d082a4ba3c6d83fc31",
     });
+    const auth = firebase.auth();
     const rtdb = firebase.database();
+    const WORKSPACE_PATH = 'workspace';
+    const HISTORY_PATH = 'history';
+    const FIREBASE_EMAIL_DOMAIN = 'vanced-work.app';
+    const CLOUD_MIGRATION_KEY = 'adwork.cloudMigration.v1';
+    const workspaceRef = rtdb.ref(WORKSPACE_PATH);
+    const historyRef = rtdb.ref(HISTORY_PATH);
     let _rtdbListener = null;
+    let _workspaceReady = false;
+    let _lastWorkspaceSnapshot = null;
+    let _hasLocalWorkspaceCache = false;
+    let _retryTimer = null;
 
-    function subscribeRTDB() {
-      if (_rtdbListener) { rtdb.ref('workspace').off('value', _rtdbListener); _rtdbListener = null; }
-      _rtdbListener = rtdb.ref('workspace').on('value', snap => {
-        const data = snap.val();
-        if (!data) return;
-        if (Array.isArray(data.tasks)) state.tasks = data.tasks.map(normalizeTask);
-        if (Array.isArray(data.routines)) state.routines = data.routines.map(normalizeRoutine);
-        if (data.weeklyFocus && typeof data.weeklyFocus === 'object') state.weeklyFocus = data.weeklyFocus;
-        if (Array.isArray(data.advertisers)) state.advertisers = data.advertisers;
+    function valuesFromFirebaseCollection(value) {
+      if (Array.isArray(value)) return value.filter(Boolean);
+      if (value && typeof value === 'object') return Object.values(value).filter(Boolean);
+      return [];
+    }
+
+    function recordsById(items) {
+      return Object.fromEntries(items.filter(item => item?.id).map(item => [item.id, item]));
+    }
+
+    function workspaceFromState() {
+      return {
+        tasks: recordsById(state.tasks),
+        routines: recordsById(state.routines),
+        weeklyFocus: { ...state.weeklyFocus },
+        advertisers: [...state.advertisers],
+      };
+    }
+
+    function normalizeWorkspaceSnapshot(data) {
+      const source = data && typeof data === 'object' ? data : {};
+      return {
+        tasks: recordsById(valuesFromFirebaseCollection(source.tasks).map(normalizeTask)),
+        routines: recordsById(valuesFromFirebaseCollection(source.routines).map(normalizeRoutine)),
+        weeklyFocus: source.weeklyFocus && typeof source.weeklyFocus === 'object' ? { ...source.weeklyFocus } : {},
+        advertisers: valuesFromFirebaseCollection(source.advertisers)
+          .map(normalizeAdvertiserName)
+          .filter((name, index, list) => name && !isCommonRoutineAdvertiser(name) && list.indexOf(name) === index),
+      };
+    }
+
+    const LOCAL_MIGRATION_EXCLUDED_TASKS = new Set([
+      '소재별 CTR / CVR 점검::타이트사주',
+      '욕망의 별자리 신규 소재 3종 제작::타이트사주',
+      '제안서 수정::SC301',
+      '신규소재 제작 요청::다이렉트결혼준비',
+      '미팅::SC301',
+      '오늘 성과 브리핑::밴스드',
+      'V24 완료 필터 테스트::V24테스트광고주',
+    ]);
+
+    function sanitizeLocalMigrationSnapshot(snapshot) {
+      const tasks = Object.fromEntries(Object.entries(snapshot.tasks).filter(([, task]) => {
+        return !LOCAL_MIGRATION_EXCLUDED_TASKS.has(`${task.title}::${task.advertiser}`);
+      }));
+      return {
+        ...snapshot,
+        tasks,
+        advertisers: snapshot.advertisers.filter(name => name !== 'V24테스트광고주'),
+      };
+    }
+
+    function applyWorkspaceSnapshot(snapshot) {
+      state.tasks = Object.values(snapshot.tasks).map(normalizeTask);
+      state.routines = Object.values(snapshot.routines).map(normalizeRoutine);
+      state.weeklyFocus = { ...snapshot.weeklyFocus };
+      state.advertisers = [...snapshot.advertisers];
+    }
+
+    function mergeWorkspaceSnapshots(local, remote) {
+      return {
+        tasks: { ...local.tasks, ...remote.tasks },
+        routines: { ...local.routines, ...remote.routines },
+        weeklyFocus: { ...local.weeklyFocus, ...remote.weeklyFocus },
+        advertisers: [...new Set([...remote.advertisers, ...local.advertisers])],
+      };
+    }
+
+    function sameJson(a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    function appendRecordUpdates(updates, path, previous, next) {
+      const ids = new Set([...Object.keys(previous || {}), ...Object.keys(next || {})]);
+      ids.forEach(id => {
+        if (!sameJson(previous?.[id] ?? null, next?.[id] ?? null)) {
+          updates[`${path}/${id}`] = next?.[id] ?? null;
+        }
+      });
+    }
+
+    function buildWorkspaceUpdates(previous, next) {
+      const updates = {};
+      appendRecordUpdates(updates, 'tasks', previous.tasks, next.tasks);
+      appendRecordUpdates(updates, 'routines', previous.routines, next.routines);
+      if (!sameJson(previous.weeklyFocus, next.weeklyFocus)) {
+        updates.weeklyFocus = Object.keys(next.weeklyFocus).length ? next.weeklyFocus : null;
+      }
+      if (!sameJson(previous.advertisers, next.advertisers)) {
+        updates.advertisers = next.advertisers.length ? next.advertisers : null;
+      }
+      return updates;
+    }
+
+    function addWorkspaceUpdateMeta(updates) {
+      if (!Object.keys(updates).length) return updates;
+      updates['meta/updatedAt'] = firebase.database.ServerValue.TIMESTAMP;
+      updates['meta/updatedByUid'] = CURRENT_UID;
+      updates['meta/updatedById'] = CURRENT_USER;
+      updates['meta/schemaVersion'] = 2;
+      return updates;
+    }
+
+    function scheduleWorkspaceRetry() {
+      clearTimeout(_retryTimer);
+      _retryTimer = setTimeout(() => {
+        if (CURRENT_USER && CURRENT_UID && _workspaceReady) syncWorkspaceChanges();
+      }, 3000);
+    }
+
+    function syncWorkspaceChanges() {
+      if (!_workspaceReady || !CURRENT_USER || !CURRENT_UID || !_lastWorkspaceSnapshot) return;
+      const previous = _lastWorkspaceSnapshot;
+      const next = workspaceFromState();
+      const updates = addWorkspaceUpdateMeta(buildWorkspaceUpdates(previous, next));
+      if (!Object.keys(updates).length) return;
+      _lastWorkspaceSnapshot = next;
+      workspaceRef.update(updates).catch(error => {
+        console.error('[RTDB] workspace save error:', error);
+        _lastWorkspaceSnapshot = previous;
+        showToast('클라우드 저장에 실패했습니다. 연결을 확인하고 다시 시도합니다.');
+        scheduleWorkspaceRetry();
+      });
+    }
+
+    async function subscribeRTDB() {
+      unsubscribeRTDB();
+      _workspaceReady = false;
+      const firstSnapshot = await workspaceRef.once('value');
+      const rawRemote = firstSnapshot.val();
+      const remote = normalizeWorkspaceSnapshot(rawRemote);
+      const local = sanitizeLocalMigrationSnapshot(workspaceFromState());
+      const shouldMigrateLocal = _hasLocalWorkspaceCache && !localStorage.getItem(CLOUD_MIGRATION_KEY);
+      const shouldMigrateLegacySchema = Array.isArray(rawRemote?.tasks) || Array.isArray(rawRemote?.routines);
+      const initial = shouldMigrateLocal ? mergeWorkspaceSnapshots(local, remote) : remote;
+
+      if (shouldMigrateLocal || shouldMigrateLegacySchema) {
+        const migrationUpdates = buildWorkspaceUpdates(remote, initial);
+        if (Array.isArray(rawRemote?.tasks)) {
+          Object.keys(migrationUpdates).filter(path => path.startsWith('tasks/')).forEach(path => delete migrationUpdates[path]);
+          migrationUpdates.tasks = initial.tasks;
+        }
+        if (Array.isArray(rawRemote?.routines)) {
+          Object.keys(migrationUpdates).filter(path => path.startsWith('routines/')).forEach(path => delete migrationUpdates[path]);
+          migrationUpdates.routines = initial.routines;
+        }
+        addWorkspaceUpdateMeta(migrationUpdates);
+        if (Object.keys(migrationUpdates).length) await workspaceRef.update(migrationUpdates);
+        if (shouldMigrateLocal) {
+          localStorage.setItem(CLOUD_MIGRATION_KEY, new Date().toISOString());
+          logHistory('LOCAL_MIGRATION', '기존 기기의 로컬 업무 데이터를 공유 워크스페이스로 이전했습니다');
+        }
+        if (shouldMigrateLegacySchema) {
+          logHistory('SCHEMA_MIGRATION', '기존 배열형 업무 데이터를 ID 기반 저장 구조로 변환했습니다');
+        }
+      }
+
+      applyWorkspaceSnapshot(initial);
+      _lastWorkspaceSnapshot = initial;
+      _workspaceReady = true;
+      persistLocalCache();
+
+      _rtdbListener = workspaceRef.on('value', snap => {
+        const incoming = normalizeWorkspaceSnapshot(snap.val());
+        applyWorkspaceSnapshot(incoming);
+        _lastWorkspaceSnapshot = incoming;
+        persistLocalCache();
         // 다이얼로그가 열려있을 때는 리렌더 스킵 (편집 중 덮어씌우기 방지)
         if (!document.querySelector('dialog[open]')) render();
+      }, error => {
+        console.error('[RTDB] workspace read error:', error);
+        showToast('공유 업무를 불러오지 못했습니다. Firebase 권한을 확인해 주세요.');
       });
     }
 
     function unsubscribeRTDB() {
-      if (_rtdbListener) { rtdb.ref('workspace').off('value', _rtdbListener); _rtdbListener = null; }
+      clearTimeout(_retryTimer);
+      if (_rtdbListener) { workspaceRef.off('value', _rtdbListener); _rtdbListener = null; }
+      _workspaceReady = false;
+      _lastWorkspaceSnapshot = null;
     }
 
-    function logHistory(type, summary) {
-      if (!CURRENT_USER) return;
-      rtdb.ref('history').push({
-        ts: Date.now(),
-        user: CURRENT_USER,
+    function logHistory(type, summary, details = null) {
+      const firebaseUser = auth.currentUser;
+      if (!CURRENT_USER || !CURRENT_UID || !firebaseUser) return;
+      const profile = USERS.find(user => user.id === CURRENT_USER);
+      historyRef.push({
+        ts: firebase.database.ServerValue.TIMESTAMP,
+        clientTs: Date.now(),
+        actorUid: CURRENT_UID,
+        actorId: CURRENT_USER,
+        actorName: profile?.korean || profile?.name || CURRENT_USER,
+        actorEmail: firebaseUser.email || '',
         type,
         summary,
-      }).catch(() => {});
+        ...(details ? { details } : {}),
+      }).catch(error => console.error('[RTDB] history save error:', error));
+    }
+
+    function formatHistoryTime(timestamp) {
+      if (!timestamp) return '시간 확인 중';
+      return new Intl.DateTimeFormat('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(new Date(timestamp));
+    }
+
+    async function refreshHistory() {
+      if (!dom.historyList || !dom.historyStatus) return;
+      dom.historyStatus.textContent = '불러오는 중...';
+      dom.historyList.innerHTML = '<div class="history-empty">변경 이력을 불러오고 있습니다.</div>';
+      try {
+        const snapshot = await historyRef.orderByChild('ts').limitToLast(100).once('value');
+        const entries = valuesFromFirebaseCollection(snapshot.val()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+        dom.historyStatus.textContent = `최근 변경 ${entries.length}건`;
+        dom.historyList.innerHTML = entries.length ? entries.map(entry => `
+          <div class="history-row">
+            <time class="history-time">${escapeHtml(formatHistoryTime(entry.ts || entry.clientTs))}</time>
+            <div class="history-actor">${escapeHtml(entry.actorName || entry.actorId || '알 수 없음')}</div>
+            <div class="history-summary">
+              ${escapeHtml(entry.summary || '변경 내용 없음')}
+              <small>${escapeHtml(entry.type || 'CHANGE')} · ${escapeHtml(entry.actorId || '')}</small>
+            </div>
+          </div>
+        `).join('') : '<div class="history-empty">아직 기록된 변경 이력이 없습니다.</div>';
+      } catch (error) {
+        console.error('[RTDB] history read error:', error);
+        dom.historyStatus.textContent = '불러오기 실패';
+        dom.historyList.innerHTML = '<div class="history-empty">Firebase 권한과 네트워크 연결을 확인해 주세요.</div>';
+      }
+    }
+
+    function openHistory() {
+      if (!dom.historyDialog) return;
+      dom.historyDialog.showModal();
+      refreshHistory();
+    }
+
+    function closeHistory() {
+      if (dom.historyDialog?.open) dom.historyDialog.close();
     }
     // ───────────────────────────────────────────────────────────────────
     const THEME_KEY = 'dailywork.theme.v1';
@@ -4623,7 +4870,7 @@
         'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
         'taskDialog', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
-        'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
+        'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'historyDialog', 'historyStatus', 'historyList', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
         'afgAll', 'afgMe', 'afgSearch', 'assigneeSearchInput', 'myTasksBtn', 'loginScreen', 'loginName', 'loginPass', 'loginBtn', 'loginError', 'userBadge', 'userBadgeName'
       ].forEach(id => { dom[id] = qs(`#${id}`); });
     }
@@ -4866,15 +5113,17 @@
       try {
         const savedTasks = readFirstStorage(STORAGE_KEYS);
         const savedRoutines = readFirstStorage(ROUTINE_KEYS);
-        state.tasks = savedTasks ? JSON.parse(savedTasks).map(normalizeTask) : seedTasks();
-        state.routines = savedRoutines ? JSON.parse(savedRoutines).map(normalizeRoutine) : seedRoutines();
+        const savedWeeklyFocus = localStorage.getItem(WEEKLY_FOCUS_KEY);
+        const savedAdvertisers = localStorage.getItem(ADVERTISER_KEY);
+        _hasLocalWorkspaceCache = Boolean(savedTasks || savedRoutines || savedWeeklyFocus || savedAdvertisers);
+        state.tasks = savedTasks ? JSON.parse(savedTasks).map(normalizeTask) : [];
+        state.routines = savedRoutines ? JSON.parse(savedRoutines).map(normalizeRoutine) : [];
         state.routines.forEach(routine => {
           if (routine.assignee) return;
           const linkedTask = state.tasks.find(task => task.routineId === routine.id && task.assignee);
           if (linkedTask) routine.assignee = linkedTask.assignee;
         });
-        state.weeklyFocus = JSON.parse(localStorage.getItem(WEEKLY_FOCUS_KEY) || '{}');
-        const savedAdvertisers = localStorage.getItem(ADVERTISER_KEY);
+        state.weeklyFocus = JSON.parse(savedWeeklyFocus || '{}');
         if (savedAdvertisers) {
           state.advertisers = JSON.parse(savedAdvertisers).filter(name => name !== '공통 루틴');
         } else {
@@ -4885,12 +5134,14 @@
           state.advertisers = [...set].filter(name => name !== '공통 루틴');
         }
       } catch (error) {
-        state.tasks = seedTasks();
-        state.routines = seedRoutines();
+        console.error('[Local cache] load error:', error);
+        _hasLocalWorkspaceCache = false;
+        state.tasks = [];
+        state.routines = [];
         state.weeklyFocus = {};
         state.advertisers = [];
       }
-      save();
+      persistLocalCache();
     }
 
     function normalizeAdvertiserName(name) {
@@ -4916,24 +5167,19 @@
       };
     }
 
-    function save() {
-      state.advertisers = state.advertisers
-        .map(normalizeAdvertiserName)
-        .filter((name, index, list) => name && !isCommonRoutineAdvertiser(name) && list.indexOf(name) === index);
-      // 로그인된 상태일 때만 Firebase에 저장 (미로그인 시 덮어쓰기 방지)
-      if (CURRENT_USER) {
-        rtdb.ref('workspace').set({
-          tasks: state.tasks,
-          routines: state.routines,
-          weeklyFocus: state.weeklyFocus,
-          advertisers: state.advertisers,
-        }).catch(err => console.error('[RTDB] save error:', err));
-      }
-      // 로컬캐시 (오프라인 대비)
+    function persistLocalCache() {
       localStorage.setItem(ACTIVE_TASK_KEY, JSON.stringify(state.tasks));
       localStorage.setItem(ACTIVE_ROUTINE_KEY, JSON.stringify(state.routines));
       localStorage.setItem(WEEKLY_FOCUS_KEY, JSON.stringify(state.weeklyFocus));
       localStorage.setItem(ADVERTISER_KEY, JSON.stringify(state.advertisers));
+    }
+
+    function save() {
+      state.advertisers = state.advertisers
+        .map(normalizeAdvertiserName)
+        .filter((name, index, list) => name && !isCommonRoutineAdvertiser(name) && list.indexOf(name) === index);
+      persistLocalCache();
+      syncWorkspaceChanges();
     }
 
     function registerAdvertiser(name) {
@@ -6025,6 +6271,7 @@
       });
       const index = state.tasks.findIndex(item => item.id === id);
       state.tasks.splice(index + 1, 0, copy);
+      logHistory('TASK_COPY', `"${task.title}" 업무를 복사했습니다`);
       save();
       render();
       showToast('업무를 복사했습니다.');
@@ -6098,6 +6345,7 @@
       task.endDate = nextEndDate;
       task.deadline = nextEndDate;
       task.updatedAt = new Date().toISOString();
+      logHistory('TASK_DATE', `"${task.title}" 데드라인을 ${nextEndDate}로 변경했습니다`);
       save();
       render();
       showToast(`업무 기간과 데드라인을 ${formatWeekHeaderDate(nextEndDate)}로 변경했습니다.`);
@@ -6115,6 +6363,7 @@
       task.endDate = nextEnd;
       task.deadline = nextEnd;
       task.updatedAt = new Date().toISOString();
+      logHistory('TASK_DATE', `"${task.title}" 기간을 ${nextStart} ~ ${nextEnd}로 변경했습니다`);
       save();
       render();
       showToast(`${formatWeekHeaderDate(nextStart)} ~ ${formatWeekHeaderDate(nextEnd)}로 업무 기간을 변경했습니다.`);
@@ -6137,6 +6386,7 @@
       }
       if (patch.advertiser) task.advertiser = patch.advertiser;
       task.updatedAt = new Date().toISOString();
+      logHistory('TASK_MOVE', `"${task.title}" 업무를 이동했습니다`);
       save();
       render();
       showToast('업무를 이동했습니다.');
@@ -6163,6 +6413,7 @@
         task.isRoutine = true;
         task.routineId = routine.id;
         materializeRoutinesForWeek();
+        logHistory('ROUTINE_ENABLE', `"${task.title}" 업무를 매일 반복 루틴으로 설정했습니다`);
         save();
         render();
         showToast('매일 반복 루틴으로 설정했습니다.');
@@ -6179,6 +6430,7 @@
         current.isRoutine = false;
         current.routineId = null;
       }
+      logHistory('ROUTINE_DISABLE', `"${task.title}" 업무의 반복 루틴을 해제했습니다`);
       save();
       render();
       showToast('루틴 반복을 해제했습니다. 현재 업무는 유지됩니다.');
@@ -6688,6 +6940,7 @@
         priority: 'normal'
       }));
       registerAdvertiser(wqa.advertiser);
+      logHistory('TASK_ADD', `"${title}" 업무를 빠른 추가했습니다 (${wqa.advertiser})`);
       save();
       render();
       showToast('업무를 추가했습니다.');
@@ -6740,6 +6993,9 @@
         if (action === 'toggle-theme') { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); }
         if (action === 'export-json') exportJson();
         if (action === 'import-json') dom.importInput.click();
+        if (action === 'open-history') { openHistory(); return; }
+        if (action === 'refresh-history') { refreshHistory(); return; }
+        if (action === 'close-history') { closeHistory(); return; }
         if (action === 'reset') resetAll();
         if (action === 'clear-completed') clearCompleted();
         if (action === 'reset-filters') resetFilters();
@@ -6937,6 +7193,12 @@
           ? `${target.dataset.advertiser}__${target.dataset.assignee}`
           : target.dataset.advertiser;
         setWeeklyFocus(focusKey, target.value);
+      });
+
+      document.addEventListener('change', event => {
+        const target = event.target.closest('[data-focus-input]');
+        if (!target) return;
+        logHistory('WEEKLY_FOCUS', `"${target.dataset.advertiser}" 중점업무를 수정했습니다`);
       });
 
       dom.taskForm.addEventListener('submit', event => {
@@ -7167,34 +7429,69 @@
       });
     }
 
-    function tryLogin() {
-      const name = (dom.loginName.value || '').trim().toLowerCase();
-      const pass = (dom.loginPass.value || '').trim().toLowerCase();
-      const user = USERS.find(u => u.id === name && u.id === pass);
-      if (!user) {
+    function firebaseEmailForLoginId(loginId) {
+      const normalized = String(loginId || '').trim().toLowerCase();
+      return normalized.includes('@') ? normalized : `${normalized}@${FIREBASE_EMAIL_DOMAIN}`;
+    }
+
+    function profileForFirebaseUser(firebaseUser) {
+      const loginId = String(firebaseUser?.email || '').split('@')[0].toLowerCase();
+      return USERS.find(user => user.id === loginId) || null;
+    }
+
+    function getLoginErrorMessage(error) {
+      const messages = {
+        'auth/invalid-credential': '아이디 또는 비밀번호가 올바르지 않습니다.',
+        'auth/user-disabled': '사용이 중지된 계정입니다. 관리자에게 문의해 주세요.',
+        'auth/too-many-requests': '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+        'auth/network-request-failed': '네트워크 연결을 확인해 주세요.',
+        'auth/operation-not-allowed': 'Firebase에서 이메일/비밀번호 로그인을 먼저 활성화해야 합니다.',
+      };
+      return messages[error?.code] || '로그인할 수 없습니다. 계정 설정을 확인해 주세요.';
+    }
+
+    async function tryLogin() {
+      const loginId = (dom.loginName.value || '').trim().toLowerCase();
+      const password = dom.loginPass.value || '';
+      if (!USERS.some(user => user.id === loginId) || !password) {
+        dom.loginError.textContent = '등록된 계정 아이디와 비밀번호를 입력해 주세요.';
         dom.loginError.hidden = false;
-        dom.loginPass.value = '';
         dom.loginPass.focus();
         return;
       }
-      CURRENT_USER = user.id;
-      localStorage.setItem(AUTH_KEY, user.id);
-      dom.loginScreen.hidden = true;
-      qs('.app').hidden = false;
-      subscribeRTDB();
-      render();
+
+      dom.loginError.hidden = true;
+      dom.loginBtn.disabled = true;
+      dom.loginBtn.textContent = '로그인 중...';
+      try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        await auth.signInWithEmailAndPassword(firebaseEmailForLoginId(loginId), password);
+        dom.loginPass.value = '';
+      } catch (error) {
+        console.error('[Auth] login error:', error);
+        dom.loginError.textContent = getLoginErrorMessage(error);
+        dom.loginError.hidden = false;
+        dom.loginPass.value = '';
+        dom.loginPass.focus();
+      } finally {
+        dom.loginBtn.disabled = false;
+        dom.loginBtn.textContent = '로그인';
+      }
     }
 
-    function logout() {
+    async function logout() {
       unsubscribeRTDB();
+      closeHistory();
       CURRENT_USER = null;
-      localStorage.removeItem(AUTH_KEY);
+      CURRENT_UID = null;
       dom.loginName.value = '';
       dom.loginPass.value = '';
       dom.loginError.hidden = true;
-      qs('.app').hidden = true;
-      dom.loginScreen.hidden = false;
-      dom.loginName.focus();
+      try {
+        await auth.signOut();
+      } catch (error) {
+        console.error('[Auth] logout error:', error);
+      }
     }
 
     function init() {
@@ -7208,20 +7505,39 @@
       dom.loginBtn.addEventListener('click', tryLogin);
       dom.loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
       dom.loginName.addEventListener('keydown', e => { if (e.key === 'Enter') dom.loginPass.focus(); });
+      localStorage.removeItem('adwork.auth.v1');
 
-      const saved = localStorage.getItem(AUTH_KEY);
-      const user = saved ? USERS.find(u => u.id === saved) : null;
-      if (user) {
-        CURRENT_USER = user.id;
+      auth.onAuthStateChanged(async firebaseUser => {
+        unsubscribeRTDB();
+        if (!firebaseUser) {
+          CURRENT_USER = null;
+          CURRENT_UID = null;
+          qs('.app').hidden = true;
+          dom.loginScreen.hidden = false;
+          dom.loginName.focus();
+          return;
+        }
+
+        const profile = profileForFirebaseUser(firebaseUser);
+        if (!profile) {
+          dom.loginError.textContent = '이 앱에 등록되지 않은 Firebase 계정입니다.';
+          dom.loginError.hidden = false;
+          await auth.signOut();
+          return;
+        }
+
+        CURRENT_USER = profile.id;
+        CURRENT_UID = firebaseUser.uid;
         dom.loginScreen.hidden = true;
         qs('.app').hidden = false;
-        subscribeRTDB(); // Firebase 실시간 리스너 시작
+        try {
+          await subscribeRTDB();
+        } catch (error) {
+          console.error('[RTDB] initial sync error:', error);
+          showToast('공유 업무 연결에 실패했습니다. Firebase 규칙과 네트워크를 확인해 주세요.');
+        }
         render();
-      } else {
-        dom.loginScreen.hidden = false;
-        qs('.app').hidden = true;
-        dom.loginName.focus();
-      }
+      });
     }
 
     init();
