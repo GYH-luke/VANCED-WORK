@@ -6457,10 +6457,11 @@
         return lines.join('\n');
       }
 
-      const order = getAdvertisers(tasks);
+      const order = getAdvertisers(tasks).filter(name => !isCommonRoutineAdvertiser(name));
       const grouped = new Map();
       tasks.forEach(task => {
-        const advertiser = normalizeAdvertiserName(task.advertiser) || '기타';
+        const raw = normalizeAdvertiserName(task.advertiser);
+        const advertiser = (!raw || isCommonRoutineAdvertiser(raw)) ? '기타' : raw;
         if (!grouped.has(advertiser)) grouped.set(advertiser, []);
         grouped.get(advertiser).push(task);
       });
