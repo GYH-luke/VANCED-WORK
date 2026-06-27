@@ -1733,9 +1733,11 @@
       height: var(--control-sm);
       flex: 0 0 var(--control-sm);
     }
-    .quick-form > .btn.primary {
-      min-height: var(--control-md);
-      align-self: end;
+    .quick-btn-group {
+      display: flex; gap: var(--s-2); align-self: end;
+    }
+    .quick-btn-group .btn {
+      min-height: var(--control-md); white-space: nowrap;
     }
     .field > input,
     .field > select {
@@ -2103,7 +2105,8 @@
       .action-menu-panel { left: 0; right: auto; }
       .hero { grid-template-columns: 1fr; }
       .quick-form { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .quick-form .btn.primary { width: 100%; }
+      .quick-btn-group { width: 100%; }
+      .quick-btn-group .btn { flex: 1; }
       .extra-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .advertiser-grid { grid-template-columns: 1fr; }
@@ -4153,8 +4156,10 @@
             <datalist id="advertiserList"></datalist>
             <div id="taskAdvertiserSuggest" class="advertiser-suggest-list" hidden></div>
           </div>
-          <button class="btn primary" type="submit">업무 추가</button>
-          <button class="btn" type="button" data-action="open-advertiser-dialog">광고주 추가</button>
+          <div class="quick-btn-group">
+            <button class="btn primary" type="submit">업무 추가</button>
+            <button class="btn" type="button" data-action="open-advertiser-dialog">광고주 추가</button>
+          </div>
 
           <details class="quick-extra">
             <summary>더 입력하기</summary>
