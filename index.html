@@ -4409,7 +4409,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 13:57 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 14:13 KST</span>
     </div>
   </footer>
 
@@ -6891,8 +6891,10 @@
         taskId: row.dataset.taskId,
         startX: event.clientX,
         startY: event.clientY,
+        lastX: event.clientX,
+        lastY: event.clientY,
         dragging: false,
-        intent: null,
+        advertiser: null,
         cloneInfo: null
       };
       handle.setPointerCapture?.(event.pointerId);
@@ -6914,36 +6916,35 @@
           dailyPointerDragState.startX,
           dailyPointerDragState.startY
         );
+        startDailyAutoScroll();
       }
+      dailyPointerDragState.lastX = event.clientX;
+      dailyPointerDragState.lastY = event.clientY;
       updateDragClonePos(dailyPointerDragState.cloneInfo, event.clientX, event.clientY);
-      const intent = getDailyDropIntentFromPoint(event.clientX, event.clientY);
-      dailyPointerDragState.intent = intent;
-      clearDailyDropPreview();
-      if (!intent) return;
-      if (intent.groupOnly) {
-        intent.element.classList.add('daily-group-drop-target');
-      } else {
-        intent.element.classList.add('daily-drop-target');
-        intent.element.classList.toggle('daily-drop-after', intent.insertAfter);
-      }
+      // 드래그 중 실제 DOM에서 행을 옮겨 다른 업무가 확실하게 밀리도록 함
+      const advertiser = liveMoveDailyRow(dailyPointerDragState.row, event.clientY);
+      if (advertiser) dailyPointerDragState.advertiser = advertiser;
     }
 
     function finishDailyPointerDrag(event, cancelled = false) {
       if (!dailyPointerDragState || event.pointerId !== dailyPointerDragState.pointerId) return false;
       const current = dailyPointerDragState;
       dailyPointerDragState = null;
+      stopDailyAutoScroll();
       current.handle.releasePointerCapture?.(event.pointerId);
-      current.row.classList.remove('dragging');
       state.dailyTaskDragging = null;
-      clearDailyDropPreview();
       removeDragClone(current.cloneInfo);
-      if (!cancelled && current.dragging && current.intent) {
-        reorderDailyTask(current.taskId, {
-          advertiser: current.intent.advertiser,
-          targetTaskId: current.intent.targetTaskId,
-          insertAfter: current.intent.insertAfter
-        });
-      } else if (!cancelled && !current.dragging) {
+      current.row.classList.remove('dragging');
+      if (cancelled) {
+        // 취소 → 라이브 이동을 되돌리기 위해 원래 순서로 다시 렌더
+        if (current.dragging) renderDailyOnly({ refreshShell: false, refreshStats: false, animate: false });
+      } else if (current.dragging) {
+        // 라이브 이동으로 행이 이미 최종 위치에 있음 → 인접 행에서 순서 계산
+        const advertiser = current.advertiser
+          || state.tasks.find(t => t.id === current.taskId)?.advertiser;
+        const intent = computeDailyDropIntentFromDom(current.row, advertiser);
+        reorderDailyTask(current.taskId, intent);
+      } else {
         // 탭(드래그 없이 누르고 땜) → 순서 변경 모드 토글
         const taskId = current.taskId;
         state.reorderModeJustToggledAt = Date.now();
@@ -6996,6 +6997,96 @@
 
     function removeDragClone(cloneInfo) {
       cloneInfo?.el?.remove();
+    }
+
+    // ── 라이브 재배치: 드래그 중 실제 DOM에서 행을 옮겨 다른 업무가 확실하게 밀리도록 함 ──
+    function dailyGroupSegments() {
+      // 광고주 헤더 + 그 아래 업무 행들을 한 그룹(segment)으로 묶음
+      const segs = [];
+      let cur = null;
+      Array.from(dom.dailyList.children).forEach(el => {
+        if (el.matches?.('tr.daily-advertiser-section[data-daily-group]')) {
+          cur = { header: el, advertiser: el.dataset.dailyGroup, rows: [] };
+          segs.push(cur);
+        } else if (el.matches?.('tr.task-row[data-daily-task-row]')) {
+          if (cur) cur.rows.push(el);
+        } else {
+          cur = null; // 담당자 헤더 / 구분선 → 그룹 컨텍스트 종료
+        }
+      });
+      return segs;
+    }
+
+    function liveMoveDailyRow(sourceRow, clientY) {
+      const segs = dailyGroupSegments();
+      if (!segs.length) return null;
+      // 1) 포인터가 들어있는 그룹 찾기 (없으면 세로상 가장 가까운 그룹)
+      let seg = null, nearest = null, nearestDist = Infinity;
+      for (const s of segs) {
+        const top = s.header.getBoundingClientRect().top;
+        const lastEl = s.rows.length ? s.rows[s.rows.length - 1] : s.header;
+        const bottom = lastEl.getBoundingClientRect().bottom;
+        if (clientY >= top && clientY <= bottom) { seg = s; break; }
+        const dist = Math.abs(clientY - (top + bottom) / 2);
+        if (dist < nearestDist) { nearestDist = dist; nearest = s; }
+      }
+      if (!seg) seg = nearest;
+      if (!seg) return null;
+      // 2) 그룹 안에서 삽입 위치 결정 (포인터 Y가 각 행의 중점보다 위면 그 앞)
+      const rows = seg.rows.filter(r => r !== sourceRow);
+      let afterEl = null;
+      for (const r of rows) {
+        const box = r.getBoundingClientRect();
+        if (clientY < box.top + box.height / 2) { afterEl = r; break; }
+      }
+      // 3) 실제 DOM 이동 (이미 그 자리면 건너뜀)
+      if (afterEl) {
+        if (sourceRow.nextElementSibling !== afterEl) dom.dailyList.insertBefore(sourceRow, afterEl);
+      } else {
+        const lastRow = rows[rows.length - 1];
+        if (lastRow) {
+          if (sourceRow.previousElementSibling !== lastRow) dom.dailyList.insertBefore(sourceRow, lastRow.nextElementSibling);
+        } else if (seg.header.nextElementSibling !== sourceRow) {
+          dom.dailyList.insertBefore(sourceRow, seg.header.nextElementSibling); // 빈 그룹 → 헤더 바로 뒤
+        }
+      }
+      return seg.advertiser;
+    }
+
+    function computeDailyDropIntentFromDom(sourceRow, advertiser) {
+      const prev = sourceRow.previousElementSibling;
+      const next = sourceRow.nextElementSibling;
+      if (prev?.matches?.('tr.task-row[data-daily-task-row]')) {
+        return { advertiser, targetTaskId: prev.dataset.taskId, insertAfter: true };
+      }
+      if (next?.matches?.('tr.task-row[data-daily-task-row]')) {
+        return { advertiser, targetTaskId: next.dataset.taskId, insertAfter: false };
+      }
+      return { advertiser, targetTaskId: null, insertAfter: false };
+    }
+
+    // ── 화면 가장자리 자동 스크롤 (긴 목록에서도 멀리 이동 가능) ──
+    let dailyAutoScrollRAF = null;
+    function startDailyAutoScroll() {
+      if (dailyAutoScrollRAF) return;
+      const step = () => {
+        if (!dailyPointerDragState?.dragging) { dailyAutoScrollRAF = null; return; }
+        const y = dailyPointerDragState.lastY;
+        const margin = 90;
+        let dy = 0;
+        if (y < margin) dy = -Math.ceil((margin - y) / 5);
+        else if (y > window.innerHeight - margin) dy = Math.ceil((y - (window.innerHeight - margin)) / 5);
+        if (dy !== 0) {
+          window.scrollBy(0, dy);
+          liveMoveDailyRow(dailyPointerDragState.row, y);
+          updateDragClonePos(dailyPointerDragState.cloneInfo, dailyPointerDragState.lastX, y);
+        }
+        dailyAutoScrollRAF = requestAnimationFrame(step);
+      };
+      dailyAutoScrollRAF = requestAnimationFrame(step);
+    }
+    function stopDailyAutoScroll() {
+      if (dailyAutoScrollRAF) { cancelAnimationFrame(dailyAutoScrollRAF); dailyAutoScrollRAF = null; }
     }
 
     // ── 클릭-투-리오더 (Toss Bank 스타일 접근성) ──
