@@ -458,6 +458,21 @@
       background: var(--surface-muted); color: var(--muted);
       font-size: 13px; user-select: none; flex: 0 0 auto;
     }
+    .daily-drag-handle {
+      display: inline-grid; place-items: center;
+      width: 26px; height: 26px; padding: 0;
+      border: none; border-radius: 8px;
+      background: transparent; color: var(--muted-2);
+      font-size: 13px; cursor: grab; user-select: none;
+      flex-shrink: 0; transition: background .14s ease, color .14s ease;
+    }
+    .daily-drag-handle:hover { background: var(--surface-muted); color: var(--muted); }
+    .task-row.dragging .daily-drag-handle { cursor: grabbing; }
+    /* Drop indicators */
+    .daily-drop-target td { background: var(--primary-soft) !important; }
+    .daily-drop-target:not(.daily-drop-after) td { border-top: 2px solid var(--primary) !important; }
+    .daily-drop-target.daily-drop-after td { border-bottom: 2px solid var(--primary) !important; }
+    .daily-group-drop-target td { background: var(--primary-soft) !important; outline: 2px solid var(--primary); outline-offset: -2px; }
 
     .status-select,
     .inline-select,
@@ -4343,7 +4358,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 21:40 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 21:55 KST</span>
     </div>
   </footer>
 
@@ -5244,7 +5259,8 @@
       if (!task?.isRoutine && !task?.routineId) return true;
       if (!routineTaskRunsOnDate(task, task.date)) return false;
       if (!start || !end || daysBetween(start, end) < 1) return true;
-      return task.date === toDateKey(new Date());
+      // D2+ daily range: show only the first instance (on the range start date) to avoid duplicates
+      return task.date === start;
     }
 
     function getTaskOrderValue(task) {
@@ -5560,7 +5576,11 @@
         const last = dates[dates.length - 1];
         return assignedTasks.filter(task => {
           const taskEnd = task.endDate || task.date;
-          if (!shouldShowRoutineTaskInRange(task, first, last)) return false;
+          // For routine tasks: show each instance on its actual date (not restricted to start date)
+          if (task.isRoutine || task.routineId) {
+            if (!routineTaskRunsOnDate(task, task.date)) return false;
+            return task.date >= first && task.date <= last;
+          }
           return task.date <= last && taskEnd >= first;
         });
       }
@@ -6791,6 +6811,8 @@
     }
 
     function beginDailyPointerDrag(event, handle) {
+      // Mouse uses the HTML5 drag API (dragstart/dragover/drop); pointer capture would block it
+      if (event.pointerType === 'mouse') return;
       const row = handle.closest('tr.task-row[data-daily-task-row]');
       if (!row || row.classList.contains('is-readonly')) return;
       dailyPointerDragState = {
