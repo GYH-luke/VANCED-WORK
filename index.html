@@ -4067,7 +4067,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2402" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2405" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4293,8 +4293,9 @@
           </div>
         </div>
         <div class="adv-filter-bar weekly-filter-bar">
+          <button type="button" class="filter-pill-select weekly-adv-all-btn" id="weeklyAdvAllBtn" data-action="clear-weekly-adv-filter" aria-pressed="true">전체 광고주</button>
           <div class="assignee-ms" id="weeklyAdvFilterMs">
-            <button type="button" class="filter-pill-select assignee-ms-trigger" id="weeklyAdvFilterTrigger" data-action="toggle-weekly-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 전체</button>
+            <button type="button" class="filter-pill-select assignee-ms-trigger weekly-adv-select-btn" id="weeklyAdvFilterTrigger" data-action="toggle-weekly-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 선택</button>
             <div class="assignee-ms-panel" id="weeklyAdvFilterPanel" hidden></div>
           </div>
         </div>
@@ -4902,7 +4903,7 @@
         'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine',
         'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone',
         'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'weeklyBoard',
-        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
+        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
         'taskDialog', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editDeleteBtn',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
         'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'historyDialog', 'historyStatus', 'historyList', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
@@ -5728,7 +5729,10 @@
         <tr class="daily-advertiser-section ${advertiserToneClass(advertiser)} ${sectionClass}" data-daily-group="${escapeHtml(advertiser)}" data-group-index="${groupIndex}">
           <td colspan="11">
             <div class="daily-group-chip">
-              <strong>${escapeHtml(advertiser)}</strong>
+              <span class="daily-group-title">
+                <strong>${escapeHtml(advertiser)}</strong>
+                <button class="daily-group-add-btn" type="button" data-action="quick-add-daily-advertiser" data-advertiser-name="${escapeHtml(advertiser)}" aria-label="${escapeHtml(advertiser)} 업무 추가" title="이 광고주 업무 추가">+</button>
+              </span>
               ${urgentCount ? `<b>급 ${urgentCount}</b>` : ''}
             </div>
           </td>
@@ -5895,12 +5899,16 @@
       if (dom.weeklyAdvFilterTrigger) {
         dom.weeklyAdvFilterTrigger.textContent = state.weeklyAdvertiserFilter.length
           ? `${state.weeklyAdvertiserFilter.length}개 광고주 선택`
-          : '광고주 전체';
+          : '광고주 선택';
       }
-      let advertisers = getAdvertisers(tasks).filter(name => name !== '공통 루틴');
-      if (state.weeklyAdvertiserFilter.length) {
-        advertisers = advertisers.filter(name => state.weeklyAdvertiserFilter.includes(name));
+      if (dom.weeklyAdvAllBtn) {
+        const isAllAdvertisers = state.weeklyAdvertiserFilter.length === 0;
+        dom.weeklyAdvAllBtn.classList.toggle('active', isAllAdvertisers);
+        dom.weeklyAdvAllBtn.setAttribute('aria-pressed', String(isAllAdvertisers));
       }
+      let advertisers = state.weeklyAdvertiserFilter.length
+        ? allAdvertisers.filter(name => state.weeklyAdvertiserFilter.includes(name))
+        : getAdvertisers(tasks).filter(name => name !== '공통 루틴');
 
       const header = `
         <div class="weekly-head">
@@ -5918,7 +5926,7 @@
           .sort((a, b) => getUserDisplayName(a).localeCompare(getUserDisplayName(b), 'ko'));
         const orderedIds = meId ? [meId, ...otherIds] : otherIds;
 
-        const groups = orderedIds.length > 0
+        const groups = advertiserTasks.length > 0
           ? orderedIds.map(id => ({ id, tasks: sortTasks(advertiserTasks.filter(t => t.assignee === id)) }))
           : [{ id: CURRENT_USER, tasks: [] }];
 
@@ -6124,6 +6132,16 @@
       render();
       showToast(payload.isRoutine ? '루틴과 업무를 추가했습니다.' : '업무를 추가했습니다.');
       return true;
+    }
+
+    function prepareDailyAdvertiserQuickAdd(advertiser) {
+      const name = normalizeAdvertiserName(advertiser);
+      if (!name) return;
+      dom.taskAdvertiser.value = name;
+      if (dom.taskDate && state.selectedDate) dom.taskDate.value = state.selectedDate;
+      hideTaskAdvertiserSuggestions();
+      dom.taskForm.closest('.quick-add')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      requestAnimationFrame(() => dom.taskTitle.focus({ preventScroll: true }));
     }
 
     function renderTaskAdvertiserSuggestions() {
@@ -7096,6 +7114,10 @@
           dom.taskAdvertiser.focus();
           return;
         }
+        if (action === 'quick-add-daily-advertiser') {
+          prepareDailyAdvertiserQuickAdd(target.dataset.advertiserName);
+          return;
+        }
         if (action === 'select-advertiser') {
           if (state.advertiserOrderDragging) return;
           const taskId = state.advertiserPickerTaskId;
@@ -7132,6 +7154,13 @@
           const hidden = dom.weeklyAdvFilterPanel.hidden;
           dom.weeklyAdvFilterPanel.hidden = !hidden;
           dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', String(!hidden));
+          return;
+        }
+        if (action === 'clear-weekly-adv-filter') {
+          state.weeklyAdvertiserFilter = [];
+          if (dom.weeklyAdvFilterPanel) dom.weeklyAdvFilterPanel.hidden = true;
+          if (dom.weeklyAdvFilterTrigger) dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
+          renderWeekly();
           return;
         }
         if (action === 'edit-task') { if (!isReadonly) openEditDialog(target.dataset.taskId); return; }
