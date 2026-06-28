@@ -217,7 +217,13 @@ html[data-theme="dark"] .daily-filter-bar { background:rgba(14,27,48,.56); }
 .task-table thead tr { background:rgba(234,241,250,.82)!important; }
 html[data-theme="dark"] .task-table thead tr { background:rgba(15,29,50,.90)!important; }
 .task-table th { min-height:46px!important; color:var(--muted)!important; }
-.task-table tbody tr.task-row { transition:filter .16s ease,opacity .16s ease; }
+.task-table tbody tr.task-row {
+  transition:filter .16s ease, opacity .2s ease,
+             margin-top .26s cubic-bezier(.16,1,.3,1),
+             margin-bottom .26s cubic-bezier(.16,1,.3,1),
+             max-height .26s cubic-bezier(.16,1,.3,1),
+             transform .24s cubic-bezier(.34,1.56,.64,1);
+}
 .task-table tbody tr.task-row td { min-height:68px!important; border-color:var(--line)!important; background-color:rgba(255,255,255,.37)!important; }
 html[data-theme="dark"] .task-table tbody tr.task-row td { background-color:rgba(13,25,44,.46)!important; }
 .task-table tbody tr.task-row:hover td { background-color:rgba(255,255,255,.70)!important; }
@@ -1202,20 +1208,50 @@ html[data-theme="dark"] .daily-ai-output { color:#edf5ff!important; }
   outline:none;
   background:color-mix(in srgb,var(--adv-accent,#64748b) 13%,transparent);
 }
-.task-row.dragging td {
-  opacity:.45;
-  filter:saturate(.8);
+/* ── iOS/Samsung 스타일 순서 변경 (파란 라인 없음) ── */
+/* 집어든 줄: 떠오른 클론이 손가락을 따라가고, 원래 자리는 매끄럽게 비워짐 */
+.task-row.dragging {
+  pointer-events:none !important;
 }
+.task-row.dragging td {
+  opacity:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  transition:opacity .16s ease !important;
+}
+/* 내려놓을 위치: 줄들이 부드럽게 비켜서며 빈 슬롯이 열림 (라인 대신 중립 톤 슬롯) */
 .task-row.daily-drop-target td {
-  box-shadow:inset 0 2px 0 var(--primary), inset 4px 0 0 var(--adv-accent,#64748b)!important;
+  box-shadow:none !important;
 }
 .task-row.daily-drop-target.daily-drop-after td {
-  box-shadow:inset 0 -2px 0 var(--primary), inset 4px 0 0 var(--adv-accent,#64748b)!important;
+  box-shadow:none !important;
 }
+.task-row.daily-drop-target::after {
+  content:'';
+  position:absolute;
+  left:12px;
+  right:12px;
+  height:44px;
+  border-radius:14px;
+  background:color-mix(in srgb,var(--ink,#0b1b3a) 7%,transparent);
+  pointer-events:none;
+  z-index:0;
+  animation:dropSlotIn .2s cubic-bezier(.16,1,.3,1) both;
+}
+.task-row.daily-drop-target:not(.daily-drop-after)::after { top:-44px; }
+.task-row.daily-drop-target.daily-drop-after::after  { bottom:-44px; }
+html[data-theme="dark"] .task-row.daily-drop-target::after {
+  background:color-mix(in srgb,#fff 9%,transparent);
+}
+@keyframes dropSlotIn {
+  from { opacity:0; transform:scaleY(.6); }
+  to   { opacity:1; transform:scaleY(1); }
+}
+/* 다른 광고주 그룹으로 옮길 때: 날카로운 파란 외곽선 대신 부드러운 강조 */
 .daily-advertiser-section.daily-group-drop-target td {
-  outline:2px solid var(--primary);
-  outline-offset:-3px;
-  background:color-mix(in srgb,var(--adv-bg,rgba(219,234,254,.72)) 72%,white 28%)!important;
+  outline:none !important;
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--adv-accent,#64748b) 32%,transparent) !important;
+  background:color-mix(in srgb,var(--adv-bg,rgba(219,234,254,.72)) 80%,white 20%)!important;
 }
 .routine-day-column-head,
 .routine-day-cell {
