@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vanced Work Ops"
+  short_description: "Safe Vanced Work edit, validation, and deployment workflow"
+  default_prompt: "Use $vanced-work-ops to update the Vanced Work app safely and prepare GitHub deployment."
