@@ -4,7 +4,8 @@
 
 1. Work in `SOURCE_WORKSPACE`.
 2. Preview at http://127.0.0.1:8765/index.html.
-3. Push through `UPLOAD_WORKSPACE`, the sibling folder named `_github_upload_VANCED-WORK`.
+3. Push through `UPLOAD_WORKSPACE`, the child folder named `_github_upload_VANCED-WORK`.
+4. Put future project artifacts inside `SOURCE_WORKSPACE` unless the user explicitly asks otherwise.
 
 ## Before Editing
 
@@ -39,8 +40,8 @@ If CSS changed, confirm the `Daily_Work_v24.css?v=...` cache query in `index.htm
 Copy deploy files from `SOURCE_WORKSPACE` to `UPLOAD_WORKSPACE`:
 
 ```powershell
-Copy-Item -LiteralPath .\index.html -Destination ..\_github_upload_VANCED-WORK\index.html -Force
-Copy-Item -LiteralPath .\Daily_Work_v24.css -Destination ..\_github_upload_VANCED-WORK\Daily_Work_v24.css -Force
+Copy-Item -LiteralPath .\index.html -Destination .\_github_upload_VANCED-WORK\index.html -Force
+Copy-Item -LiteralPath .\Daily_Work_v24.css -Destination .\_github_upload_VANCED-WORK\Daily_Work_v24.css -Force
 ```
 
 Then run Git commands from `UPLOAD_WORKSPACE`:

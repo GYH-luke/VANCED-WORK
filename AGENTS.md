@@ -9,6 +9,7 @@ Use this file before modifying Vanced Work.
 - Read the relevant role document in `agents/`.
 - For implementation tasks, inspect `index.html` and `Daily_Work_v24.css` before editing.
 - For browser checks, use the in-app browser skill when the user explicitly mentions the browser plugin or when localhost verification is needed.
+- Create future requested project artifacts inside the existing Vanced Work source folder unless the user explicitly asks otherwise.
 
 ## Standard Work Loop
 
@@ -39,7 +40,7 @@ Use this file before modifying Vanced Work.
 - Avoid global redesign when the user asks for a local fix.
 - Preserve `data-action` delegated event patterns.
 - Prefer `apply_patch` for file edits.
-- Do not edit `_github_upload_VANCED-WORK` as the source of truth for app changes. Copy validated files from the source workspace.
+- Do not edit `_github_upload_VANCED-WORK` as the source of truth for app changes. It lives inside the source workspace only as the GitHub upload clone; copy validated app files into it.
 - Treat Firebase workspace data as production data.
 - Back up JSON before import, migration, or data cleanup work.
 

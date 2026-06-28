@@ -23,7 +23,7 @@ Read these when needed:
 ## Project Map
 
 - Source workspace alias: `SOURCE_WORKSPACE`.
-- Upload workspace alias: `UPLOAD_WORKSPACE`.
+- Upload workspace alias: `UPLOAD_WORKSPACE`, the child Git folder inside `SOURCE_WORKSPACE` named `_github_upload_VANCED-WORK`.
 - GitHub: https://github.com/GYH-luke/VANCED-WORK
 - Local preview: http://127.0.0.1:8765/index.html
 - Main app: `index.html`.
@@ -42,6 +42,7 @@ Read these when needed:
 - Keep final responses short and include file links, folder links, local preview, and GitHub link.
 - Treat localStorage migration keys and Firebase workspace data as production-risk surfaces.
 - Do not store passwords, tokens, or secrets in memory or docs.
+- Put future requested project artifacts inside `SOURCE_WORKSPACE` unless the user explicitly asks for another location.
 
 ## Standard Workflow
 

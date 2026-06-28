@@ -8,6 +8,7 @@ Use this before final delivery.
 - [ ] JavaScript syntax validation passed when `index.html` changed.
 - [ ] Local preview checked when UI or interaction changed.
 - [ ] Deploy files copied to `_github_upload_VANCED-WORK` when needed.
+- [ ] New requested artifacts are inside the existing source folder unless explicitly requested otherwise.
 - [ ] Source/upload hashes or diffs checked when deploy files changed.
 - [ ] Git status reviewed before commit/push.
 - [ ] GitHub push completed or `Everything up-to-date` confirmed.

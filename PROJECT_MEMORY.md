@@ -18,9 +18,10 @@ Last updated: 2026-06-28 17:52 KST
 Use these aliases to avoid path encoding issues in prompts:
 
 - `SOURCE_WORKSPACE`: local working app folder under the Codex desktop workspace. It contains `index.html`, `Daily_Work_v24.css`, `.firebaserc`, `firebase.json`, `database.rules.json`, and `FIREBASE_SETUP.md`.
-- `UPLOAD_WORKSPACE`: sibling Git folder named `_github_upload_VANCED-WORK`.
+- `UPLOAD_WORKSPACE`: child Git folder inside `SOURCE_WORKSPACE`, named `_github_upload_VANCED-WORK`.
 - Source of truth for edits: `SOURCE_WORKSPACE`.
 - Source of truth for GitHub push: `UPLOAD_WORKSPACE`.
+- User preference: place all future requested project artifacts inside `SOURCE_WORKSPACE` unless the user explicitly asks for another location.
 
 When giving the user final results, include clickable links to the actual folders.
 
@@ -60,6 +61,7 @@ When giving the user final results, include clickable links to the actual folder
 
 - Always include changed file links and folder links in final responses.
 - Always include local preview and GitHub repo links after completed app work.
+- Always create requested files, docs, helper folders, and working artifacts inside the existing Vanced Work source folder.
 - For every user-requested app change, update footer timestamp in `index.html` using current KST.
 - If CSS changes, bump the `Daily_Work_v24.css?v=...` cache query in `index.html`.
 - Keep final explanations concise and practical.
