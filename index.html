@@ -4133,7 +4133,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2410" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2412" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4409,7 +4409,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 14:13 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 08:06 KST</span>
     </div>
   </footer>
 
@@ -6110,9 +6110,9 @@
       const routineEnabled = Boolean(task.isRoutine || task.routineId);
       const routineDay = getTaskRoutineDay(task);
       return `
-        <tr class="task-row ${task.status} ${completed ? 'is-complete' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${routineEnabled ? 'is-routine-task' : ''} ${advertiserToneClass(task.advertiser)} ${sectionClass} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-daily-task-row data-task-id="${task.id}">
+        <tr class="task-row ${task.status} ${completed ? 'is-complete' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${routineEnabled ? 'is-routine-task' : ''} ${advertiserToneClass(task.advertiser)} ${sectionClass} ${mine ? '' : 'is-readonly'}" draggable="false" data-daily-task-row data-task-id="${task.id}">
           <td class="copy-cell">
-            <button class="daily-drag-handle" type="button" draggable="${mine}" data-daily-drag-handle aria-pressed="false" aria-label="${escapeHtml(task.title)} 순서 이동" title="눌러서 순서 변경 모드, 드래그로 직접 이동">
+            <button class="daily-drag-handle" type="button" draggable="false" data-daily-drag-handle aria-pressed="false" aria-label="${escapeHtml(task.title)} 순서 이동" title="눌러서 순서 변경 모드, 드래그로 직접 이동">
               <span aria-hidden="true">⋮⋮</span>
             </button>
             <button class="copy-task-btn" type="button" data-action="copy-task" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 복사" title="업무 복사">
@@ -6861,6 +6861,55 @@
 
     let dailyPointerDragState = null;
 
+    function createDailyDragPlaceholder(row) {
+      const rect = row.getBoundingClientRect();
+      const placeholder = document.createElement('tr');
+      placeholder.className = `daily-drag-placeholder ${[...row.classList].filter(name => name.startsWith('adv-tone-') || name.startsWith('assignee-section-') || name === 'assignee-section-row' || name === 'is-self-section').join(' ')}`;
+      placeholder.dataset.dailyDragPlaceholder = 'true';
+      placeholder.style.setProperty('--placeholder-height', `${Math.max(68, Math.round(rect.height))}px`);
+      placeholder.innerHTML = `<td colspan="12"><div class="daily-drag-placeholder-slot"><span>여기에 놓기</span></div></td>`;
+      row.parentElement.insertBefore(placeholder, row.nextElementSibling);
+      return placeholder;
+    }
+
+    function removeDailyDragPlaceholder(placeholder) {
+      placeholder?.remove?.();
+    }
+
+    function getDailyMotionRows() {
+      return qsa('tr.task-row[data-daily-task-row]:not(.dragging), tr.daily-drag-placeholder', dom.dailyList);
+    }
+
+    function captureDailyRowPositions() {
+      const map = new Map();
+      getDailyMotionRows().forEach((row, index) => {
+        const key = row.dataset.taskId || row.dataset.dailyDragPlaceholder || `row-${index}`;
+        map.set(key, row.getBoundingClientRect().top);
+      });
+      return map;
+    }
+
+    function animateDailyRowShift(before) {
+      getDailyMotionRows().forEach((row, index) => {
+        const key = row.dataset.taskId || row.dataset.dailyDragPlaceholder || `row-${index}`;
+        const oldTop = before.get(key);
+        if (oldTop == null) return;
+        const newTop = row.getBoundingClientRect().top;
+        const delta = oldTop - newTop;
+        if (Math.abs(delta) < 1) return;
+        row.style.transition = 'none';
+        row.style.transform = `translateY(${delta}px)`;
+        row.getBoundingClientRect();
+        requestAnimationFrame(() => {
+          row.style.transition = 'transform .2s cubic-bezier(.2,.85,.2,1)';
+          row.style.transform = '';
+          window.setTimeout(() => {
+            row.style.transition = '';
+          }, 230);
+        });
+      });
+    }
+
     function getDailyDropIntent(event) {
       const row = event.target.closest('tr.task-row[data-daily-task-row]');
       if (row) {
@@ -6895,6 +6944,7 @@
         lastY: event.clientY,
         dragging: false,
         advertiser: null,
+        placeholder: null,
         cloneInfo: null
       };
       handle.setPointerCapture?.(event.pointerId);
@@ -6910,12 +6960,13 @@
         dailyPointerDragState.dragging = true;
         exitReorderMode();
         state.dailyTaskDragging = dailyPointerDragState.taskId;
-        dailyPointerDragState.row.classList.add('dragging');
         dailyPointerDragState.cloneInfo = createDragClone(
           dailyPointerDragState.row,
           dailyPointerDragState.startX,
           dailyPointerDragState.startY
         );
+        dailyPointerDragState.placeholder = createDailyDragPlaceholder(dailyPointerDragState.row);
+        dailyPointerDragState.row.classList.add('dragging');
         startDailyAutoScroll();
       }
       dailyPointerDragState.lastX = event.clientX;
@@ -6934,17 +6985,22 @@
       current.handle.releasePointerCapture?.(event.pointerId);
       state.dailyTaskDragging = null;
       removeDragClone(current.cloneInfo);
-      current.row.classList.remove('dragging');
       if (cancelled) {
         // 취소 → 라이브 이동을 되돌리기 위해 원래 순서로 다시 렌더
+        removeDailyDragPlaceholder(current.placeholder);
+        current.row.classList.remove('dragging');
         if (current.dragging) renderDailyOnly({ refreshShell: false, refreshStats: false, animate: false });
       } else if (current.dragging) {
-        // 라이브 이동으로 행이 이미 최종 위치에 있음 → 인접 행에서 순서 계산
+        // placeholder가 최종 위치에 있음 → 인접 행에서 순서 계산
         const advertiser = current.advertiser
           || state.tasks.find(t => t.id === current.taskId)?.advertiser;
-        const intent = computeDailyDropIntentFromDom(current.row, advertiser);
+        const intent = computeDailyDropIntentFromDom(current.placeholder, advertiser);
+        removeDailyDragPlaceholder(current.placeholder);
+        current.row.classList.remove('dragging');
         reorderDailyTask(current.taskId, intent);
       } else {
+        removeDailyDragPlaceholder(current.placeholder);
+        current.row.classList.remove('dragging');
         // 탭(드래그 없이 누르고 땜) → 순서 변경 모드 토글
         const taskId = current.taskId;
         state.reorderModeJustToggledAt = Date.now();
@@ -7000,7 +7056,7 @@
     }
 
     // ── 라이브 재배치: 드래그 중 실제 DOM에서 행을 옮겨 다른 업무가 확실하게 밀리도록 함 ──
-    function dailyGroupSegments() {
+    function dailyGroupSegments(sourceRow = null, placeholder = null) {
       // 광고주 헤더 + 그 아래 업무 행들을 한 그룹(segment)으로 묶음
       const segs = [];
       let cur = null;
@@ -7009,7 +7065,9 @@
           cur = { header: el, advertiser: el.dataset.dailyGroup, rows: [] };
           segs.push(cur);
         } else if (el.matches?.('tr.task-row[data-daily-task-row]')) {
-          if (cur) cur.rows.push(el);
+          if (cur && el !== sourceRow) cur.rows.push(el);
+        } else if (el === placeholder) {
+          // placeholder는 위치 표시 전용이라 대상 행 계산에서는 제외
         } else {
           cur = null; // 담당자 헤더 / 구분선 → 그룹 컨텍스트 종료
         }
@@ -7018,7 +7076,9 @@
     }
 
     function liveMoveDailyRow(sourceRow, clientY) {
-      const segs = dailyGroupSegments();
+      const placeholder = dailyPointerDragState?.placeholder;
+      if (!placeholder) return null;
+      const segs = dailyGroupSegments(sourceRow, placeholder);
       if (!segs.length) return null;
       // 1) 포인터가 들어있는 그룹 찾기 (없으면 세로상 가장 가까운 그룹)
       let seg = null, nearest = null, nearestDist = Infinity;
@@ -7033,29 +7093,48 @@
       if (!seg) seg = nearest;
       if (!seg) return null;
       // 2) 그룹 안에서 삽입 위치 결정 (포인터 Y가 각 행의 중점보다 위면 그 앞)
-      const rows = seg.rows.filter(r => r !== sourceRow);
+      const rows = seg.rows;
       let afterEl = null;
       for (const r of rows) {
         const box = r.getBoundingClientRect();
         if (clientY < box.top + box.height / 2) { afterEl = r; break; }
       }
-      // 3) 실제 DOM 이동 (이미 그 자리면 건너뜀)
+      const before = captureDailyRowPositions();
+      let moved = false;
+      // 3) placeholder를 실제 DOM에서 이동 (이미 그 자리면 건너뜀)
       if (afterEl) {
-        if (sourceRow.nextElementSibling !== afterEl) dom.dailyList.insertBefore(sourceRow, afterEl);
+        if (placeholder.nextElementSibling !== afterEl) {
+          dom.dailyList.insertBefore(placeholder, afterEl);
+          moved = true;
+        }
       } else {
         const lastRow = rows[rows.length - 1];
         if (lastRow) {
-          if (sourceRow.previousElementSibling !== lastRow) dom.dailyList.insertBefore(sourceRow, lastRow.nextElementSibling);
-        } else if (seg.header.nextElementSibling !== sourceRow) {
-          dom.dailyList.insertBefore(sourceRow, seg.header.nextElementSibling); // 빈 그룹 → 헤더 바로 뒤
+          const ref = lastRow.nextElementSibling;
+          if (placeholder.previousElementSibling !== lastRow) {
+            dom.dailyList.insertBefore(placeholder, ref);
+            moved = true;
+          }
+        } else if (seg.header.nextElementSibling !== placeholder) {
+          dom.dailyList.insertBefore(placeholder, seg.header.nextElementSibling); // 빈 그룹 → 헤더 바로 뒤
+          moved = true;
         }
       }
+      if (moved) animateDailyRowShift(before);
       return seg.advertiser;
     }
 
-    function computeDailyDropIntentFromDom(sourceRow, advertiser) {
-      const prev = sourceRow.previousElementSibling;
-      const next = sourceRow.nextElementSibling;
+    function computeDailyDropIntentFromDom(markerRow, advertiser) {
+      let prev = markerRow.previousElementSibling;
+      while (prev && (!prev.matches?.('tr.task-row[data-daily-task-row]') || prev.classList.contains('dragging'))) {
+        if (prev.matches?.('tr.daily-advertiser-section[data-daily-group]')) break;
+        prev = prev.previousElementSibling;
+      }
+      let next = markerRow.nextElementSibling;
+      while (next && (!next.matches?.('tr.task-row[data-daily-task-row]') || next.classList.contains('dragging'))) {
+        if (next.matches?.('tr.daily-advertiser-section[data-daily-group], tr.daily-assignee-top, tr.daily-section-separator')) break;
+        next = next.nextElementSibling;
+      }
       if (prev?.matches?.('tr.task-row[data-daily-task-row]')) {
         return { advertiser, targetTaskId: prev.dataset.taskId, insertAfter: true };
       }

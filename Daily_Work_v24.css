@@ -1202,31 +1202,56 @@ html[data-theme="dark"] .daily-ai-output { color:#edf5ff!important; }
   outline:none;
   background:color-mix(in srgb,var(--adv-accent,#64748b) 13%,transparent);
 }
-/* ── 순서 변경: 드래그 중 실제 DOM에서 행이 이동하며 확실하게 밀림 (파란 라인 없음) ── */
-/* 집어든 줄 = 이동하는 "빈 슬롯". 내려놓을 위치를 또렷하게 보여줌 */
+/* Daily drag: a real placeholder row owns the drop position, so rows visibly move aside. */
+.task-row.daily-drop-target,
+.task-row.daily-drop-target.daily-drop-after {
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
 .task-row.dragging {
-  pointer-events:none !important;
+  display:none!important;
 }
-.task-row.dragging td {
-  opacity:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  border-bottom-color:transparent !important;
+.daily-drag-placeholder {
+  display:grid;
+  grid-template-columns:var(--daily-grid);
+  width:100%;
+  align-items:stretch;
+  animation:dailyPlaceholderIn .12s ease both;
 }
-.task-row.dragging::before { display:none !important; }
-.task-row.dragging::after {
-  content:'';
-  position:absolute;
-  inset:7px 12px;
-  border-radius:14px;
-  background:color-mix(in srgb,var(--ink,#0b1b3a) 6%,transparent);
-  border:2px dashed color-mix(in srgb,var(--ink,#0b1b3a) 22%,transparent);
-  pointer-events:none;
-  z-index:0;
+.daily-drag-placeholder td {
+  grid-column:1 / -1;
+  min-height:var(--placeholder-height,72px)!important;
+  padding:7px 12px!important;
+  border-bottom:1px solid transparent!important;
+  background:transparent!important;
 }
-html[data-theme="dark"] .task-row.dragging::after {
-  background:color-mix(in srgb,#fff 7%,transparent);
-  border-color:color-mix(in srgb,#fff 26%,transparent);
+.daily-drag-placeholder-slot {
+  height:calc(var(--placeholder-height,72px) - 14px);
+  min-height:54px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px dashed color-mix(in srgb,var(--adv-accent,#64748b) 52%,transparent);
+  border-radius:16px;
+  background:color-mix(in srgb,var(--adv-bg,rgba(219,234,254,.72)) 72%,white 28%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 10px 24px rgba(37,99,235,.10);
+}
+.daily-drag-placeholder-slot span {
+  color:color-mix(in srgb,var(--adv-accent,#2563eb) 82%,#0f172a 18%);
+  font-size:12px;
+  font-weight:900;
+}
+html[data-theme="dark"] .daily-drag-placeholder-slot {
+  background:color-mix(in srgb,var(--adv-bg,rgba(30,64,175,.28)) 76%,#0f172a 24%);
+  border-color:color-mix(in srgb,var(--adv-accent,#60a5fa) 58%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 26px rgba(0,0,0,.24);
+}
+html[data-theme="dark"] .daily-drag-placeholder-slot span {
+  color:#dbeafe;
+}
+@keyframes dailyPlaceholderIn {
+  from { opacity:.35; transform:scaleY(.92); }
+  to { opacity:1; transform:scaleY(1); }
 }
 /* 다른 광고주 그룹으로 옮길 때: 날카로운 파란 외곽선 대신 부드러운 강조 */
 .daily-advertiser-section.daily-group-drop-target td {
