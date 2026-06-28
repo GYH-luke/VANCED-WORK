@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-06-28 17:52 KST
+Last updated: 2026-06-28 20:42 KST
 
 ## Project Identity
 
@@ -44,7 +44,9 @@ When giving the user final results, include clickable links to the actual folder
 - Header brand is `Vanced Work`.
 - The old `D` icon and subtitle are removed.
 - Daily `Today` navigation should show today's date by D1.
-- Weekly and Advertiser `Today` navigation should start at today by D7.
+- Weekly is fixed to business-week D5: Monday through Friday only. `Today` opens the current Monday-Friday range, and previous/next navigation moves by one calendar week.
+- Advertiser `Today` navigation should start at today by D7.
+- Weekly assignee columns stay compact, while focus columns use a wider layout with normal-weight 12px text and automatic vertical growth.
 - Change history is admin-only.
 - Global delete-all functionality is removed.
 - Clicking selected `My tasks` toggles back to all assignees.

@@ -1113,3 +1113,39 @@ html[data-theme="dark"] .daily-ai-output { color:#edf5ff!important; }
   .history-row { grid-template-columns:92px minmax(0,1fr); gap:6px 10px; }
   .history-summary { grid-column:1 / -1; }
 }
+
+/* Weekly business-week layout */
+#weeklyBoard .weekly-head,
+#weeklyBoard .weekly-row {
+  grid-template-columns:108px minmax(420px,1.6fr) repeat(var(--period-days,5),minmax(142px,1fr));
+}
+#weeklyBoard .weekly-timeline-row {
+  grid-template-rows:repeat(var(--task-lanes,3),minmax(40px,auto));
+}
+#weeklyBoard .weekly-advertiser-cell {
+  padding-inline:10px!important;
+}
+#weeklyBoard .weekly-assignee-badge {
+  max-width:100%;
+  white-space:nowrap;
+}
+#weeklyBoard .weekly-focus-wrap {
+  height:auto!important;
+  min-height:120px;
+  align-self:stretch;
+}
+#weeklyBoard .focus-field {
+  min-height:98px!important;
+  padding:8px 9px!important;
+  overflow-y:hidden;
+  resize:none;
+  font-size:12px!important;
+  font-weight:400!important;
+  line-height:1.42;
+}
+
+@media (max-width:860px) {
+  #weeklyBoard { min-width:0!important; }
+  #weeklyBoard .weekly-focus-wrap { min-height:auto; }
+  #weeklyBoard .focus-field { min-height:88px!important; }
+}

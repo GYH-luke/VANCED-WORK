@@ -4067,7 +4067,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2406" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2407" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4331,7 +4331,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 20:23 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 20:42 KST</span>
     </div>
   </footer>
 
@@ -4950,6 +4950,11 @@
       return d;
     }
 
+    function getBusinessWeekRange(dateKey = toDateKey(new Date())) {
+      const monday = toDateKey(getMonday(new Date(`${dateKey}T00:00:00`)));
+      return { start: monday, end: addDays(monday, 4) };
+    }
+
     function daysBetween(startKey, endKey) {
       const start = new Date(`${startKey}T00:00:00`);
       const end = new Date(`${endKey}T00:00:00`);
@@ -4957,6 +4962,7 @@
     }
 
     function getPeriodLength() {
+      if (state.view === 'weekly') return 5;
       const { start, end } = getFilterRange();
       if (!start || !end) return 7;
       return daysBetween(start, end) + 1;
@@ -4965,6 +4971,10 @@
     function getWeekDates() {
       const { start, end } = getFilterRange();
       const first = start || state.weekStart || state.selectedDate;
+      if (state.view === 'weekly') {
+        const businessWeek = getBusinessWeekRange(first);
+        return Array.from({ length: 5 }, (_, index) => addDays(businessWeek.start, index));
+      }
       const last = end || addDays(first, 6);
       const length = Math.min(31, daysBetween(first, last) + 1);
       return Array.from({ length }, (_, index) => addDays(first, index));
@@ -5000,6 +5010,18 @@
       state.filters.endDate = end;
     }
 
+    function setWeeklyBusinessRange(dateKey) {
+      const { start, end } = getBusinessWeekRange(dateKey || state.selectedDate || toDateKey(new Date()));
+      setDateRange(start, end);
+    }
+
+    function setActiveView(view) {
+      state.view = view;
+      if (view === 'weekly') {
+        setWeeklyBusinessRange(state.filters.startDate || state.selectedDate || toDateKey(new Date()));
+      }
+    }
+
     function syncDailyRange(dateKey) {
       if (!dateKey) return;
       setDateRange(dateKey, addDays(dateKey, 6));
@@ -5011,17 +5033,29 @@
         setDateRange(today, today);
         return;
       }
+      if (state.view === 'weekly') {
+        setWeeklyBusinessRange(today);
+        return;
+      }
       setDateRange(today, addDays(today, 6));
     }
 
     function setPeriodStart(dateKey) {
       if (!dateKey) return;
+      if (state.view === 'weekly') {
+        setWeeklyBusinessRange(dateKey);
+        return;
+      }
       const currentEnd = state.filters.endDate || addDays(dateKey, 6);
       setDateRange(dateKey, dateKey > currentEnd ? dateKey : currentEnd);
     }
 
     function setPeriodEnd(dateKey) {
       if (!dateKey) return;
+      if (state.view === 'weekly') {
+        setWeeklyBusinessRange(dateKey);
+        return;
+      }
       const currentStart = state.filters.startDate || dateKey;
       setDateRange(dateKey < currentStart ? dateKey : currentStart, dateKey);
     }
@@ -5029,6 +5063,11 @@
     function shiftPeriod(direction) {
       const { start, end } = getFilterRange();
       const first = start || state.selectedDate;
+      if (state.view === 'weekly') {
+        const businessWeek = getBusinessWeekRange(first);
+        setWeeklyBusinessRange(addDays(businessWeek.start, direction * 7));
+        return;
+      }
       const last = end || addDays(first, 6);
       const step = getPeriodLength() * direction;
       setDateRange(addDays(first, step), addDays(last, step));
@@ -5043,6 +5082,10 @@
 
     function togglePeriodPresetMenu() {
       if (!dom.periodPresetMenu) return;
+      if (state.view === 'weekly') {
+        closePeriodPresetMenu();
+        return;
+      }
       const willOpen = dom.periodPresetMenu.hidden;
       dom.periodPresetMenu.hidden = !willOpen;
       dom.periodBadge?.setAttribute('aria-expanded', String(willOpen));
@@ -5053,6 +5096,12 @@
     }
 
     function applyPeriodPreset(days) {
+      if (state.view === 'weekly') {
+        setWeeklyBusinessRange(state.filters.startDate || state.selectedDate);
+        closePeriodPresetMenu();
+        render();
+        return;
+      }
       if (days === 'all') {
         const myTasks = state.tasks.filter(t => !t.assignee || t.assignee === CURRENT_USER);
         if (!myTasks.length) { closePeriodPresetMenu(); return; }
@@ -5506,6 +5555,20 @@
       else persistLocalCache();
     }
 
+    function resizeWeeklyFocusField(field) {
+      if (!field?.matches?.('[data-focus-input]')) return;
+      field.style.height = 'auto';
+      const parentMinimum = Math.max(98, (field.parentElement?.clientHeight || 118) - 20);
+      field.style.height = `${Math.max(parentMinimum, field.scrollHeight)}px`;
+    }
+
+    function resizeWeeklyFocusFields() {
+      if (!dom.weeklyBoard) return;
+      requestAnimationFrame(() => {
+        qsa('[data-focus-input]', dom.weeklyBoard).forEach(resizeWeeklyFocusField);
+      });
+    }
+
     function applyTheme(theme, persist = true) {
       const nextTheme = theme === 'dark' ? 'dark' : 'light';
       state.theme = nextTheme;
@@ -5611,8 +5674,13 @@
       dom.selectedEndDateInput.value = state.filters.endDate || addDays(state.selectedDate, 6);
       const periodLength = getPeriodLength();
       dom.periodBadge.textContent = `D${periodLength}`;
-      dom.periodBadge.setAttribute('aria-label', `현재 ${periodLength}일 기간. D1, D5, D7 중 선택`);
-      dom.periodBadge.title = '기간 프리셋 선택';
+      const isWeekly = state.view === 'weekly';
+      dom.periodBadge.disabled = isWeekly;
+      dom.periodBadge.setAttribute('aria-label', isWeekly ? '위클리는 월요일부터 금요일까지 D5 고정' : `현재 ${periodLength}일 기간. D1, D5, D7 중 선택`);
+      dom.periodBadge.title = isWeekly ? '위클리는 D5 고정' : '기간 프리셋 선택';
+      if (isWeekly) closePeriodPresetMenu();
+      const todayButton = qs('[data-action="go-today"]');
+      if (todayButton) todayButton.title = isWeekly ? '이번 주 월요일부터 금요일로 이동' : state.view === 'daily' ? '오늘 날짜로 이동' : '오늘부터 7일 기간으로 이동';
       dom.taskDate.value = state.selectedDate;
       dom.searchInput.value = state.filters.query;
       dom.filterStatus.value = state.filters.status;
@@ -5628,7 +5696,7 @@
 
       const map = {
         daily: ['오늘 업무', '선택한 날짜 구간의 업무를 한 번에 관리합니다.'],
-        weekly: ['이번 주 업무', '선택한 날짜 구간을 광고주와 날짜별로 정리합니다.'],
+        weekly: ['이번 주 업무', '월요일부터 금요일까지 광고주와 날짜별로 정리합니다.'],
         advertiser: ['광고주별 업무', '선택한 날짜 구간의 업무를 광고주와 상태별로 정리합니다.'],
       };
       updateFilterBadge();
@@ -5980,8 +6048,9 @@
       }).join('') : `<div class="empty" style="margin:12px;">선택 기간의 업무가 없습니다.</div>`;
 
       dom.weeklyBoard.style.setProperty('--period-days', String(weekDates.length));
-      dom.weeklyBoard.style.minWidth = `${370 + weekDates.length * 142}px`;
+      dom.weeklyBoard.style.minWidth = `${528 + weekDates.length * 142}px`;
       dom.weeklyBoard.innerHTML = header + rows;
+      resizeWeeklyFocusFields();
     }
 
     function renderMiniTask(task, weekDates, laneIndex = 0) {
@@ -7082,7 +7151,7 @@
 
         if (action === 'go-my-tasks') {
           const showingMyTasks = state.view === 'daily' && state.filters.assignee === 'me';
-          state.view = 'daily';
+          setActiveView('daily');
           state.filters.assignee = showingMyTasks ? 'all' : 'me';
           state.filters.assigneeQuery = '';
           syncDailyRange(toDateKey(new Date()));
@@ -7264,14 +7333,14 @@
       });
 
       qsa('.tab').forEach((button, index, tabs) => {
-        button.addEventListener('click', () => { state.view = button.dataset.view; render(); });
+        button.addEventListener('click', () => { setActiveView(button.dataset.view); render(); });
         button.addEventListener('keydown', event => {
           if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
           event.preventDefault();
           const direction = event.key === 'ArrowRight' ? 1 : -1;
           const next = tabs[(index + direction + tabs.length) % tabs.length];
           next.focus();
-          state.view = next.dataset.view;
+          setActiveView(next.dataset.view);
           render();
         });
       });
@@ -7338,6 +7407,7 @@
       document.addEventListener('input', event => {
         const target = event.target.closest('[data-focus-input]');
         if (!target) return;
+        resizeWeeklyFocusField(target);
         const focusKey = target.dataset.assignee
           ? `${target.dataset.advertiser}__${target.dataset.assignee}`
           : target.dataset.advertiser;
@@ -7602,10 +7672,11 @@
         }
         if (event.altKey && ['1', '2', '3'].includes(event.key)) {
           event.preventDefault();
-          state.view = ['daily', 'weekly', 'advertiser'][Number(event.key) - 1];
+          setActiveView(['daily', 'weekly', 'advertiser'][Number(event.key) - 1]);
           render();
         }
       });
+      window.addEventListener('resize', resizeWeeklyFocusFields);
     }
 
     function firebaseEmailForLoginId(loginId) {
