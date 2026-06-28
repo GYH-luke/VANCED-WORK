@@ -4358,7 +4358,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 21:55 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 22:10 KST</span>
     </div>
   </footer>
 
@@ -6178,10 +6178,24 @@
 
         // Each assignee gets its own independent weekly-row
         const assigneeRows = groups.map(g => {
-          const laneCount = Math.max(2, g.tasks.length);
           const isSelf = g.id === CURRENT_USER;
           const isReadonly = g.id && !isSelf;
           const focusKey = g.id ? `${advertiser}__${g.id}` : advertiser;
+
+          // Assign lanes: routine tasks with the same routineId share one lane (same height)
+          const routineKeyLane = new Map();
+          let laneCounter = 0;
+          g.tasks.forEach(task => {
+            if (task.isRoutine || task.routineId) {
+              const key = task.routineId || task.title;
+              if (!routineKeyLane.has(key)) routineKeyLane.set(key, laneCounter++);
+            }
+          });
+          const nonRoutineLanes = new Map();
+          g.tasks.forEach(task => {
+            if (!task.isRoutine && !task.routineId) nonRoutineLanes.set(task.id, laneCounter++);
+          });
+          const laneCount = Math.max(2, laneCounter || g.tasks.length);
 
           const assigneeCell = `
             <div class="weekly-static weekly-advertiser-cell" style="grid-column:1;grid-row:1 / span ${laneCount};">
@@ -6193,7 +6207,12 @@
             </div>`;
           const dayCells = weekDates.map((date, dayIndex) => `
             <div class="weekly-cell weekly-day-bg" data-dropzone data-date="${date}" data-day-index="${dayIndex}" data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id}" style="grid-column:${dayIndex + 3};grid-row:1 / span ${laneCount};" aria-label="${formatWeekHeaderDate(date)} 업무 추가"></div>`).join('');
-          const miniTasks = g.tasks.map((task, laneIndex) => renderMiniTask(task, weekDates, laneIndex)).join('');
+          const miniTasks = g.tasks.map(task => {
+            const lane = (task.isRoutine || task.routineId)
+              ? (routineKeyLane.get(task.routineId || task.title) ?? 0)
+              : (nonRoutineLanes.get(task.id) ?? 0);
+            return renderMiniTask(task, weekDates, lane);
+          }).join('');
 
           return `
             <div class="weekly-row weekly-timeline-row ${advertiserToneClass(advertiser)}${isSelf ? ' is-own-row' : ''}" data-weekly-row data-advertiser="${escapeHtml(advertiser)}"${g.id ? ` data-assignee="${g.id}"` : ''} style="--task-lanes:${laneCount};">
