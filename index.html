@@ -694,6 +694,17 @@
     .dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: var(--s-2); }
     .span-2 { grid-column: span 2; }
     .dialog-actions { display: flex; justify-content: flex-end; gap: var(--s-2); margin-top: var(--s-4); }
+    .dialog-actions .edit-delete-btn {
+      width: 36px; height: 36px; margin-right: auto;
+      border-color: rgba(220,38,38,0.20);
+      background: rgba(254,226,226,0.66);
+      font-family: "Segoe UI Symbol", sans-serif;
+      font-size: 17px;
+    }
+    .dialog-actions .edit-delete-btn:hover {
+      border-color: rgba(220,38,38,0.38);
+      background: rgba(254,202,202,0.82);
+    }
 
     .toast {
       position: fixed; right: 24px; bottom: 24px; z-index: 100;
@@ -4056,7 +4067,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2401" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2402" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4110,7 +4121,7 @@
         <button class="icon-btn theme-toggle" id="themeToggle" type="button" data-action="toggle-theme" aria-label="다크모드로 전환" aria-pressed="false" title="테마 전환">
           <span id="themeIcon" aria-hidden="true">☾</span>
         </button>
-        <button class="btn" type="button" id="myTasksBtn" data-action="go-my-tasks" title="내 업무만 보기">내 업무</button>
+        <button class="btn" type="button" id="myTasksBtn" data-action="go-my-tasks" title="내 업무만 보기" aria-pressed="false">내 업무</button>
         <button class="btn primary" type="button" data-action="go-today" title="오늘부터 7일 기간으로 이동">오늘로 이동</button>
         <details class="action-menu">
           <summary aria-label="관리 메뉴">관리</summary>
@@ -4120,7 +4131,6 @@
             <button class="btn" type="button" data-action="import-json">불러오기</button>
             <button class="btn" type="button" data-action="export-json">내보내기</button>
             <button class="btn" type="button" data-action="clear-completed">완료 업무 정리</button>
-            <button class="btn danger" type="button" data-action="reset">전체 삭제</button>
           </div>
         </details>
       </div>
@@ -4282,6 +4292,12 @@
             <p>업무 오른쪽 테두리를 드래그하면 종료 요일이 데드라인으로 저장됩니다.</p>
           </div>
         </div>
+        <div class="adv-filter-bar weekly-filter-bar">
+          <div class="assignee-ms" id="weeklyAdvFilterMs">
+            <button type="button" class="filter-pill-select assignee-ms-trigger" id="weeklyAdvFilterTrigger" data-action="toggle-weekly-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 전체</button>
+            <div class="assignee-ms-panel" id="weeklyAdvFilterPanel" hidden></div>
+          </div>
+        </div>
         <div class="weekly-scroll" style="margin-top:12px;">
           <div class="weekly-table" id="weeklyBoard"></div>
         </div>
@@ -4366,6 +4382,7 @@
           </div>
         </div>
         <div class="dialog-actions">
+          <button class="icon-action-btn danger edit-delete-btn" id="editDeleteBtn" type="button" data-action="delete-editing-task" aria-label="업무 삭제" title="업무 삭제"><span aria-hidden="true">&#128465;</span></button>
           <button class="btn" type="button" data-action="close-edit">닫기</button>
           <button class="btn primary" type="submit">저장</button>
         </div>
@@ -4496,7 +4513,11 @@
       const u = USERS.find(u => u.id === id);
       return u ? u.korean : (id || '미배정');
     }
-    function isMine(task) { return !task.assignee || task.assignee === CURRENT_USER; }
+    function isUnassignedRecord(record) {
+      const assignee = String(record?.assignee || '').trim().toLowerCase();
+      return !assignee || assignee === '미배정' || assignee === 'unassigned';
+    }
+    function isMine(task) { return task.assignee === CURRENT_USER; }
     function syncAssigneeFilterUI() {
       if (!dom.afgAll) return;
       const mode = state.filters.assignee;
@@ -4509,7 +4530,13 @@
         dom.assigneeSearchInput.hidden = mode !== 'search';
         if (mode === 'search') dom.assigneeSearchInput.focus();
       }
-      if (dom.myTasksBtn) dom.myTasksBtn.classList.toggle('active', state.view === 'daily' && mode === 'me');
+      if (dom.myTasksBtn) {
+        const showingMyTasks = state.view === 'daily' && mode === 'me';
+        dom.myTasksBtn.classList.toggle('active', showingMyTasks);
+        dom.myTasksBtn.textContent = showingMyTasks ? '담당자 전체' : '내 업무';
+        dom.myTasksBtn.title = showingMyTasks ? '담당자 전체 보기' : '내 업무만 보기';
+        dom.myTasksBtn.setAttribute('aria-pressed', String(showingMyTasks));
+      }
     }
 
     const STORAGE_KEYS = [
@@ -4567,8 +4594,8 @@
 
     function workspaceFromState() {
       return {
-        tasks: recordsById(state.tasks),
-        routines: recordsById(state.routines),
+        tasks: recordsById(state.tasks.filter(task => !isUnassignedRecord(task))),
+        routines: recordsById(state.routines.filter(routine => !isUnassignedRecord(routine))),
         weeklyFocus: { ...state.weeklyFocus },
         advertisers: [...state.advertisers],
       };
@@ -4577,8 +4604,8 @@
     function normalizeWorkspaceSnapshot(data) {
       const source = data && typeof data === 'object' ? data : {};
       return {
-        tasks: recordsById(valuesFromFirebaseCollection(source.tasks).map(normalizeTask)),
-        routines: recordsById(valuesFromFirebaseCollection(source.routines).map(normalizeRoutine)),
+        tasks: recordsById(valuesFromFirebaseCollection(source.tasks).map(normalizeTask).filter(task => !isUnassignedRecord(task))),
+        routines: recordsById(valuesFromFirebaseCollection(source.routines).map(normalizeRoutine).filter(routine => !isUnassignedRecord(routine))),
         weeklyFocus: source.weeklyFocus && typeof source.weeklyFocus === 'object' ? { ...source.weeklyFocus } : {},
         advertisers: valuesFromFirebaseCollection(source.advertisers)
           .map(normalizeAdvertiserName)
@@ -4598,18 +4625,20 @@
 
     function sanitizeLocalMigrationSnapshot(snapshot) {
       const tasks = Object.fromEntries(Object.entries(snapshot.tasks).filter(([, task]) => {
-        return !LOCAL_MIGRATION_EXCLUDED_TASKS.has(`${task.title}::${task.advertiser}`);
+        return !isUnassignedRecord(task) && !LOCAL_MIGRATION_EXCLUDED_TASKS.has(`${task.title}::${task.advertiser}`);
       }));
+      const routines = Object.fromEntries(Object.entries(snapshot.routines).filter(([, routine]) => !isUnassignedRecord(routine)));
       return {
         ...snapshot,
         tasks,
+        routines,
         advertisers: snapshot.advertisers.filter(name => name !== 'V24테스트광고주'),
       };
     }
 
     function applyWorkspaceSnapshot(snapshot) {
-      state.tasks = Object.values(snapshot.tasks).map(normalizeTask);
-      state.routines = Object.values(snapshot.routines).map(normalizeRoutine);
+      state.tasks = Object.values(snapshot.tasks).map(normalizeTask).filter(task => !isUnassignedRecord(task));
+      state.routines = Object.values(snapshot.routines).map(normalizeRoutine).filter(routine => !isUnassignedRecord(routine));
       state.weeklyFocus = { ...snapshot.weeklyFocus };
       state.advertisers = [...snapshot.advertisers];
     }
@@ -4792,6 +4821,10 @@
     }
 
     function openHistory() {
+      if (!isAdmin()) {
+        showToast('변경 이력은 관리자만 확인할 수 있습니다.');
+        return;
+      }
       if (!dom.historyDialog) return;
       dom.historyDialog.showModal();
       refreshHistory();
@@ -4844,6 +4877,7 @@
         hideDone: false
       },
       advertiserFilter: [],
+      weeklyAdvertiserFilter: [],
       sortMode: 'smart',
       tableSort: { field: 'date', direction: 'asc' },
       editingId: null,
@@ -4854,6 +4888,7 @@
       advertiserPickerTaskId: null,
       advertiserOrderDragging: false,
       advertiserCardDragging: null,
+      lastTaskDragEndAt: 0,
       theme: document.documentElement.dataset.theme || 'light',
     };
 
@@ -4867,8 +4902,8 @@
         'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine',
         'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone',
         'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'weeklyBoard',
-        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
-        'taskDialog', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority',
+        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
+        'taskDialog', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editDeleteBtn',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
         'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'historyDialog', 'historyStatus', 'historyList', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
         'afgAll', 'afgMe', 'afgSearch', 'assigneeSearchInput', 'myTasksBtn', 'loginScreen', 'loginName', 'loginPass', 'loginBtn', 'loginError', 'userBadge', 'userBadgeName'
@@ -5116,8 +5151,8 @@
         const savedWeeklyFocus = localStorage.getItem(WEEKLY_FOCUS_KEY);
         const savedAdvertisers = localStorage.getItem(ADVERTISER_KEY);
         _hasLocalWorkspaceCache = Boolean(savedTasks || savedRoutines || savedWeeklyFocus || savedAdvertisers);
-        state.tasks = savedTasks ? JSON.parse(savedTasks).map(normalizeTask) : [];
-        state.routines = savedRoutines ? JSON.parse(savedRoutines).map(normalizeRoutine) : [];
+        state.tasks = savedTasks ? JSON.parse(savedTasks).map(normalizeTask).filter(task => !isUnassignedRecord(task)) : [];
+        state.routines = savedRoutines ? JSON.parse(savedRoutines).map(normalizeRoutine).filter(routine => !isUnassignedRecord(routine)) : [];
         state.routines.forEach(routine => {
           if (routine.assignee) return;
           const linkedTask = state.tasks.find(task => task.routineId === routine.id && task.assignee);
@@ -5175,6 +5210,8 @@
     }
 
     function save() {
+      state.tasks = state.tasks.filter(task => !isUnassignedRecord(task));
+      state.routines = state.routines.filter(routine => !isUnassignedRecord(routine));
       state.advertisers = state.advertisers
         .map(normalizeAdvertiserName)
         .filter((name, index, list) => name && !isCommonRoutineAdvertiser(name) && list.indexOf(name) === index);
@@ -5324,17 +5361,18 @@
     }
 
     function getBaseTasks() {
-      if (state.view === 'daily') return [...state.tasks];
+      const assignedTasks = state.tasks.filter(task => !isUnassignedRecord(task));
+      if (state.view === 'daily') return assignedTasks;
       if (state.view === 'weekly') {
         const dates = getWeekDates();
         const first = dates[0];
         const last = dates[dates.length - 1];
-        return state.tasks.filter(task => {
+        return assignedTasks.filter(task => {
           const taskEnd = task.endDate || task.date;
           return task.date <= last && taskEnd >= first;
         });
       }
-      return [...state.tasks];
+      return assignedTasks;
     }
 
 
@@ -5342,7 +5380,7 @@
       const query = state.filters.query.trim().toLowerCase();
       const { start, end } = getFilterRange();
       return state.tasks.filter(task => {
-        if (!task.assignee) return false;
+        if (isUnassignedRecord(task)) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
         if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
@@ -5361,7 +5399,7 @@
     function applyFilters(tasks) {
       const query = state.filters.query.trim().toLowerCase();
       return tasks.filter(task => {
-        if (!task.assignee) return false;
+        if (isUnassignedRecord(task)) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
         if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
         if (state.filters.status !== 'all' && task.status !== state.filters.status) return false;
@@ -5568,6 +5606,8 @@
         const u = USERS.find(x => x.id === CURRENT_USER);
         dom.userBadgeName.textContent = u ? `${u.name} (${u.korean})` : CURRENT_USER;
       }
+      const historyButton = qs('[data-action="open-history"]');
+      if (historyButton) historyButton.hidden = !isAdmin();
 
       const map = {
         daily: ['오늘 업무', '선택한 날짜 구간의 업무를 한 번에 관리합니다.'],
@@ -5643,6 +5683,7 @@
       const query = state.filters.query.trim().toLowerCase();
       const { start, end } = getFilterRange();
       const routineTasks = sortTasks(state.tasks.filter(task => {
+        if (isUnassignedRecord(task)) return false;
         if (!task.isRoutine) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
         if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
@@ -5843,9 +5884,23 @@
     }
 
     function renderWeekly() {
-      const tasks = viewTasks();
+      const tasks = viewTasks().filter(task => !isUnassignedRecord(task));
       const weekDates = getWeekDates();
-      const advertisers = getAdvertisers(tasks).filter(name => name !== '공통 루틴');
+      const allAdvertisers = getSelectableAdvertisers();
+      if (dom.weeklyAdvFilterPanel) {
+        dom.weeklyAdvFilterPanel.innerHTML = allAdvertisers.length
+          ? allAdvertisers.map(advertiser => `<label class="assignee-ms-item"><input type="checkbox" data-weekly-adv-filter="${escapeHtml(advertiser)}" ${state.weeklyAdvertiserFilter.includes(advertiser) ? 'checked' : ''} /><span>${escapeHtml(advertiser)}</span></label>`).join('')
+          : `<span style="padding:10px 14px;color:var(--muted);font-size:12px;display:block;">광고주 없음</span>`;
+      }
+      if (dom.weeklyAdvFilterTrigger) {
+        dom.weeklyAdvFilterTrigger.textContent = state.weeklyAdvertiserFilter.length
+          ? `${state.weeklyAdvertiserFilter.length}개 광고주 선택`
+          : '광고주 전체';
+      }
+      let advertisers = getAdvertisers(tasks).filter(name => name !== '공통 루틴');
+      if (state.weeklyAdvertiserFilter.length) {
+        advertisers = advertisers.filter(name => state.weeklyAdvertiserFilter.includes(name));
+      }
 
       const header = `
         <div class="weekly-head">
@@ -5865,7 +5920,7 @@
 
         const groups = orderedIds.length > 0
           ? orderedIds.map(id => ({ id, tasks: sortTasks(advertiserTasks.filter(t => t.assignee === id)) }))
-          : [{ id: null, tasks: advertiserTasks }];
+          : [{ id: CURRENT_USER, tasks: [] }];
 
         // Each assignee gets its own independent weekly-row
         const assigneeRows = groups.map(g => {
@@ -5876,16 +5931,14 @@
 
           const assigneeCell = `
             <div class="weekly-static weekly-advertiser-cell" style="grid-column:1;grid-row:1 / span ${laneCount};">
-              ${g.id
-                ? `<span class="weekly-assignee-badge ${isSelf ? 'is-self' : ''}">${getUserDisplayName(g.id)}</span>`
-                : `<span style="color:var(--muted);font-size:11px;">미배정</span>`}
+              <span class="weekly-assignee-badge ${isSelf ? 'is-self' : ''}">${getUserDisplayName(g.id)}</span>
             </div>`;
           const focusCell = `
             <div class="weekly-focus-wrap" style="grid-column:2;grid-row:1 / span ${laneCount};">
               <textarea class="focus-field" data-focus-input data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id || ''}" placeholder="중점업무 입력"${isReadonly ? ' readonly title="타인의 중점업무는 수정할 수 없습니다"' : ''}>${escapeHtml(getWeeklyFocus(focusKey))}</textarea>
             </div>`;
           const dayCells = weekDates.map((date, dayIndex) => `
-            <div class="weekly-cell weekly-day-bg" data-dropzone data-date="${date}" data-day-index="${dayIndex}" data-advertiser="${escapeHtml(advertiser)}" style="grid-column:${dayIndex + 3};grid-row:1 / span ${laneCount};" aria-label="${formatWeekHeaderDate(date)} 업무 추가"></div>`).join('');
+            <div class="weekly-cell weekly-day-bg" data-dropzone data-date="${date}" data-day-index="${dayIndex}" data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id}" style="grid-column:${dayIndex + 3};grid-row:1 / span ${laneCount};" aria-label="${formatWeekHeaderDate(date)} 업무 추가"></div>`).join('');
           const miniTasks = g.tasks.map((task, laneIndex) => renderMiniTask(task, weekDates, laneIndex)).join('');
 
           return `
@@ -5922,7 +5975,7 @@
       const rangeLabel = totalDays > 1 ? `<span class="weekly-task-duration" title="데드라인 ${formatWeekHeaderDate(taskEndDate)}">마감 ${deadlineLabel}</span>` : '';
 
       return `
-        <div class="mini-task timeline-task ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''}" draggable="true" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="양쪽 테두리를 드래그해 시작/종료 요일을 조정하세요">
+        <div class="mini-task timeline-task ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''}" draggable="true" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="클릭해서 업무 수정">
           <button class="weekly-resize-handle is-start" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 요일 변경" title="드래그해서 시작 요일 변경"><span aria-hidden="true"></span></button>
           <label class="card-complete-check" title="완료 여부 변경">
             <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} />
@@ -5951,6 +6004,7 @@
     function renderAdvertiser() {
       const { start, end } = getFilterRange();
       const tasks = state.tasks.filter(task => {
+        if (isUnassignedRecord(task)) return false;
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
         return true;
@@ -6030,7 +6084,7 @@
     function renderTaskCard(task) {
       const mine = isMine(task);
       return `
-        <div class="task-card ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" title="${mine ? '더블클릭해서 수정' : '타인의 업무는 수정할 수 없습니다'}">
+        <div class="task-card ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" title="클릭해서 업무 수정">
           <label class="card-complete-check" title="완료 여부 변경">
             <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} ${mine ? '' : 'disabled'} />
             <span aria-hidden="true"></span>
@@ -6436,9 +6490,16 @@
       showToast('루틴 반복을 해제했습니다. 현재 업무는 유지됩니다.');
     }
 
-    function deleteTask(id) {
+    function deleteTask(id, anchorElement = null) {
       const index = state.tasks.findIndex(task => task.id === id);
       if (index < 0) return;
+      const anchor = state.view === 'daily' ? anchorElement?.closest?.('tr.task-row') || anchorElement : null;
+      const anchorBounds = anchor?.getBoundingClientRect?.();
+      const undoAnchor = anchorBounds ? {
+        top: anchorBounds.top,
+        right: anchorBounds.right,
+        bottom: anchorBounds.bottom
+      } : null;
       const [removed] = state.tasks.splice(index, 1);
       logHistory('TASK_DELETE', `"${removed.title}" 업무를 삭제했습니다`);
       state.lastUndo = {
@@ -6452,7 +6513,7 @@
       };
       save();
       render();
-      showToast('업무를 삭제했습니다.', true);
+      showToast(`"${removed.title}" 삭제됨`, true, undoAnchor);
     }
 
     function deleteRoutine(id) {
@@ -6506,51 +6567,6 @@
       });
     }
 
-    function resetAll() {
-      requestConfirm('전체 삭제', '모든 업무와 매일 반복 업무를 지우고 샘플 데이터로 되돌립니다. 삭제 직후 3초 안에 되돌릴 수 있습니다.', () => {
-        const prev = {
-          tasks: [...state.tasks],
-          routines: [...state.routines],
-          advertisers: [...state.advertisers],
-          filters: { ...state.filters },
-          sortMode: state.sortMode,
-          tableSort: { ...state.tableSort },
-          weeklyFocus: { ...state.weeklyFocus }
-        };
-        logHistory('RESET_ALL', '전체 데이터를 초기화했습니다 (샘플 데이터로 복원)');
-        localStorage.removeItem(ACTIVE_TASK_KEY);
-        localStorage.removeItem(ACTIVE_ROUTINE_KEY);
-        localStorage.removeItem(ADVERTISER_KEY);
-        state.tasks = seedTasks();
-        state.routines = seedRoutines();
-        state.filters = { query: '', advertiser: 'all', status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: state.selectedDate, endDate: addDays(state.selectedDate, 6), hideDone: false };
-        state.sortMode = 'smart';
-        state.tableSort = { field: 'status', direction: 'asc' };
-        state.weeklyFocus = {};
-        const advSet = new Set();
-        state.tasks.forEach(t => t.advertiser && advSet.add(t.advertiser));
-        state.advertisers = [...advSet];
-        state.lastUndo = {
-          label: '전체 삭제 취소',
-          run: () => {
-            state.tasks = prev.tasks;
-            state.routines = prev.routines;
-            state.advertisers = prev.advertisers;
-            state.filters = prev.filters;
-            state.sortMode = prev.sortMode;
-            state.tableSort = prev.tableSort;
-            state.weeklyFocus = prev.weeklyFocus;
-            save();
-            render();
-            showToast('전체 삭제를 취소했습니다.');
-          }
-        };
-        save();
-        render();
-        showToast('전체 데이터를 다시 시작했습니다.', true);
-      });
-    }
-
     function exportJson() {
       const blob = new Blob([JSON.stringify({ tasks: state.tasks, routines: state.routines, weeklyFocus: state.weeklyFocus, advertisers: state.advertisers }, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -6569,8 +6585,8 @@
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result);
-          state.tasks = Array.isArray(data.tasks) ? data.tasks.map(normalizeTask) : [];
-          state.routines = Array.isArray(data.routines) ? data.routines.map(normalizeRoutine) : [];
+          state.tasks = Array.isArray(data.tasks) ? data.tasks.map(normalizeTask).filter(task => !isUnassignedRecord(task)) : [];
+          state.routines = Array.isArray(data.routines) ? data.routines.map(normalizeRoutine).filter(routine => !isUnassignedRecord(routine)) : [];
           state.weeklyFocus = data.weeklyFocus && typeof data.weeklyFocus === 'object' ? data.weeklyFocus : {};
           state.advertisers = Array.isArray(data.advertisers) ? data.advertisers : [];
           logHistory('IMPORT', `JSON 파일을 가져왔습니다 (업무 ${state.tasks.length}개)`);
@@ -6596,6 +6612,7 @@
       dom.editPriority.value = task.priority;
       dom.editStatus.value = task.status === 'done' ? task.previousStatus : task.status;
       dom.editMemo.value = task.memo;
+      dom.editDeleteBtn.hidden = !isMine(task);
       dom.taskDialog.showModal();
       dom.editTitle.focus();
     }
@@ -6609,7 +6626,7 @@
       state.confirmAction = action;
       dom.confirmTitle.textContent = title;
       dom.confirmMessage.textContent = message;
-      dom.confirmActionBtn.textContent = title === '전체 삭제' ? '전체 삭제' : title.endsWith('광고주 삭제') ? '삭제' : '정리하기';
+      dom.confirmActionBtn.textContent = title.endsWith('광고주 삭제') ? '삭제' : '정리하기';
       dom.confirmDialog.showModal();
     }
 
@@ -6718,12 +6735,43 @@
     }
 
     let toastTimer = null;
-    function showToast(message, hasUndo = false) {
+
+    function resetToastPosition() {
+      dom.toast.classList.remove('is-task-undo');
+      dom.toast.style.removeProperty('left');
+      dom.toast.style.removeProperty('top');
+    }
+
+    function positionTaskUndoToast(anchorRect) {
+      if (!anchorRect) return;
+      const toastRect = dom.toast.getBoundingClientRect();
+      const gap = 10;
+      const edge = 12;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const outsideLeft = anchorRect.right + gap;
+      const alignedRight = anchorRect.right - toastRect.width;
+      const left = outsideLeft + toastRect.width <= viewportWidth - edge
+        ? outsideLeft
+        : Math.min(Math.max(edge, alignedRight), viewportWidth - toastRect.width - edge);
+      const centeredTop = anchorRect.top + (anchorRect.bottom - anchorRect.top - toastRect.height) / 2;
+      const top = Math.min(Math.max(edge, centeredTop), viewportHeight - toastRect.height - edge);
+      dom.toast.style.left = `${Math.round(left)}px`;
+      dom.toast.style.top = `${Math.round(top)}px`;
+    }
+
+    function showToast(message, hasUndo = false, anchorRect = null) {
+      resetToastPosition();
       dom.toastText.textContent = message;
       dom.toastAction.hidden = !hasUndo || !state.lastUndo;
+      if (anchorRect && hasUndo) dom.toast.classList.add('is-task-undo');
       dom.toast.classList.add('show');
+      if (anchorRect && hasUndo) positionTaskUndoToast(anchorRect);
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => dom.toast.classList.remove('show'), 3000);
+      toastTimer = setTimeout(() => {
+        dom.toast.classList.remove('show');
+        resetToastPosition();
+      }, 3000);
     }
 
     function showPassiveToast(message) {
@@ -6744,7 +6792,10 @@
           event.dataTransfer.effectAllowed = 'move';
           event.dataTransfer.setData('text/plain', item.dataset.taskId);
         });
-        item.addEventListener('dragend', () => item.classList.remove('dragging'));
+        item.addEventListener('dragend', () => {
+          item.classList.remove('dragging');
+          state.lastTaskDragEndAt = Date.now();
+        });
       });
       qsa('[data-advertiser-card][draggable="true"]').forEach(card => {
         card.addEventListener('dragstart', event => {
@@ -6897,12 +6948,13 @@
       setTaskDateRange(current.taskId, current.previewStart, current.previewEnd);
     }
 
-    const wqa = { date: null, advertiser: null };
+    const wqa = { date: null, advertiser: null, assignee: null };
 
     function openWeeklyQuickAdd(date, advertiser, anchorEl) {
       wqa.date = date;
       wqa.advertiser = advertiser;
-      dom.wqaLabel.textContent = `${formatDate(date, { month: 'numeric', day: 'numeric', weekday: 'short' })} · ${advertiser}`;
+      wqa.assignee = anchorEl.closest('[data-weekly-row]')?.dataset.assignee || CURRENT_USER;
+      dom.wqaLabel.textContent = `${formatDate(date, { month: 'numeric', day: 'numeric', weekday: 'short' })} · ${advertiser} · ${getUserDisplayName(wqa.assignee)}`;
       dom.wqaTitle.value = '';
       dom.weeklyQuickAdd.hidden = false;
       // 팝업 위치: 앵커 기준
@@ -6927,6 +6979,7 @@
       dom.weeklyQuickAdd.hidden = true;
       wqa.date = null;
       wqa.advertiser = null;
+      wqa.assignee = null;
     }
 
     function submitWeeklyQuickAdd() {
@@ -6935,6 +6988,7 @@
       state.tasks.push(normalizeTask({
         title,
         advertiser: wqa.advertiser,
+        assignee: wqa.assignee || CURRENT_USER,
         date: wqa.date,
         status: 'todo',
         priority: 'normal'
@@ -6974,8 +7028,9 @@
         }
 
         if (action === 'go-my-tasks') {
+          const showingMyTasks = state.view === 'daily' && state.filters.assignee === 'me';
           state.view = 'daily';
-          state.filters.assignee = 'me';
+          state.filters.assignee = showingMyTasks ? 'all' : 'me';
           state.filters.assigneeQuery = '';
           syncDailyRange(toDateKey(new Date()));
           syncAssigneeFilterUI();
@@ -6996,7 +7051,6 @@
         if (action === 'open-history') { openHistory(); return; }
         if (action === 'refresh-history') { refreshHistory(); return; }
         if (action === 'close-history') { closeHistory(); return; }
-        if (action === 'reset') resetAll();
         if (action === 'clear-completed') clearCompleted();
         if (action === 'reset-filters') resetFilters();
         if (action === 'open-daily-ai') { openDailyAiDialog(); return; }
@@ -7016,6 +7070,14 @@
           if (dom.filterStatus) dom.filterStatus.value = state.filters.status;
           if (dom.hideDone) dom.hideDone.checked = state.filters.hideDone;
           renderDailyOnly({ refreshShell: false, refreshOptions: false, refreshStats: true, animate: false });
+          return;
+        }
+        if (action === 'delete-editing-task') {
+          const taskId = state.editingId;
+          const task = state.tasks.find(item => item.id === taskId);
+          if (!taskId || !task || !isMine(task)) return;
+          closeEditDialog();
+          deleteTask(taskId);
           return;
         }
         if (action === 'close-edit') closeEditDialog();
@@ -7056,13 +7118,20 @@
         }
         if (action === 'logout') { logout(); return; }
         const isReadonly = target.closest('.is-readonly');
-        if (action === 'delete-task') { if (!isReadonly) deleteTask(target.dataset.taskId); return; }
+        if (action === 'delete-task') { if (!isReadonly) deleteTask(target.dataset.taskId, target); return; }
         if (action === 'copy-task') { if (!isReadonly) copyTask(target.dataset.taskId); return; }
         if (action === 'toggle-adv-filter') {
           if (!dom.advFilterPanel) return;
           const hidden = dom.advFilterPanel.hidden;
           dom.advFilterPanel.hidden = !hidden;
           dom.advFilterTrigger.setAttribute('aria-expanded', String(!hidden));
+          return;
+        }
+        if (action === 'toggle-weekly-adv-filter') {
+          if (!dom.weeklyAdvFilterPanel) return;
+          const hidden = dom.weeklyAdvFilterPanel.hidden;
+          dom.weeklyAdvFilterPanel.hidden = !hidden;
+          dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', String(!hidden));
           return;
         }
         if (action === 'edit-task') { if (!isReadonly) openEditDialog(target.dataset.taskId); return; }
@@ -7090,6 +7159,17 @@
             state.advertiserFilter = state.advertiserFilter.filter(a => a !== adv);
           }
           renderAdvertiser();
+          return;
+        }
+        const weeklyAdvFilterCheck = event.target.closest('[data-weekly-adv-filter]');
+        if (weeklyAdvFilterCheck && weeklyAdvFilterCheck.type === 'checkbox') {
+          const advertiser = weeklyAdvFilterCheck.dataset.weeklyAdvFilter;
+          if (weeklyAdvFilterCheck.checked) {
+            if (!state.weeklyAdvertiserFilter.includes(advertiser)) state.weeklyAdvertiserFilter.push(advertiser);
+          } else {
+            state.weeklyAdvertiserFilter = state.weeklyAdvertiserFilter.filter(name => name !== advertiser);
+          }
+          renderWeekly();
           return;
         }
         const statusSelect = event.target.closest('[data-action="change-status"]');
@@ -7143,6 +7223,12 @@
           dom.advFilterPanel.hidden = true;
           if (dom.advFilterTrigger) dom.advFilterTrigger.setAttribute('aria-expanded', 'false');
         }
+        if (dom.weeklyAdvFilterPanel && !dom.weeklyAdvFilterPanel.hidden &&
+            !dom.weeklyAdvFilterPanel.contains(event.target) &&
+            !event.target.closest('[data-action="toggle-weekly-adv-filter"]')) {
+          dom.weeklyAdvFilterPanel.hidden = true;
+          if (dom.weeklyAdvFilterTrigger) dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
+        }
         const editableTitle = event.target.closest('.task-title-wrap');
         if (editableTitle) {
           const id = editableTitle.dataset.taskId;
@@ -7151,12 +7237,11 @@
             return;
           }
         }
-      });
-
-      document.addEventListener('dblclick', event => {
-        const editable = event.target.closest('.mini-task, .task-card');
-        if (!editable || editable.classList.contains('is-readonly')) return;
-        const id = editable.dataset.taskId;
+        const editableCard = event.target.closest('.mini-task, .task-card');
+        if (!editableCard) return;
+        if (event.target.closest('button, input, select, textarea, label, [data-weekly-resize-handle]')) return;
+        if (Date.now() - state.lastTaskDragEndAt < 250) return;
+        const id = editableCard.dataset.taskId;
         if (id) openEditDialog(id);
       });
 
@@ -7382,6 +7467,7 @@
         if (state.lastUndo) state.lastUndo.run();
         state.lastUndo = null;
         dom.toast.classList.remove('show');
+        resetToastPosition();
       });
 
       // 위클리 셀 클릭 → 팝업
