@@ -4067,7 +4067,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2407" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2409" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4215,7 +4215,18 @@
                 <label for="taskMemo">메모</label>
                 <input id="taskMemo" type="text" placeholder="필요할 때만 입력" />
               </div>
-              <label class="check"><input id="taskRoutine" type="checkbox" />매일 반복</label>
+              <label class="check"><input id="taskRoutine" type="checkbox" />루틴</label>
+              <div class="field routine-day-field">
+                <label for="taskRoutineDay">루틴요일</label>
+                <select id="taskRoutineDay" disabled>
+                  <option value="daily">매일</option>
+                  <option value="mon">매주 월</option>
+                  <option value="tue">매주 화</option>
+                  <option value="wed">매주 수</option>
+                  <option value="thu">매주 목</option>
+                  <option value="fri">매주 금</option>
+                </select>
+              </div>
             </div>
           </details>
         </form>
@@ -4276,6 +4287,7 @@
                 <th><button class="sort-head" type="button" data-sort-field="priority">우선 <span data-sort-indicator="priority"></span></button></th>
                 <th><button class="sort-head" type="button" data-sort-field="status">상태 <span data-sort-indicator="status"></span></button></th>
                 <th class="routine-column-head">루틴</th>
+                <th class="routine-day-column-head">루틴요일</th>
                 <th class="complete-column-head">완료</th>
                 <th>관리</th>
               </tr>
@@ -4331,7 +4343,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 20:42 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-28 21:40 KST</span>
     </div>
   </footer>
 
@@ -4375,6 +4387,17 @@
               <option value="todo">시작전</option>
               <option value="doing">진행중</option>
               <option value="done">완료</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editRoutineDay">루틴요일</label>
+            <select id="editRoutineDay">
+              <option value="daily">매일</option>
+              <option value="mon">매주 월</option>
+              <option value="tue">매주 화</option>
+              <option value="wed">매주 수</option>
+              <option value="thu">매주 목</option>
+              <option value="fri">매주 금</option>
             </select>
           </div>
           <div class="field span-2">
@@ -4873,6 +4896,15 @@
       { id: 'urgent', label: '급' }
     ];
 
+    const ROUTINE_DAYS = [
+      { id: 'daily', label: '매일' },
+      { id: 'mon', label: '매주 월', day: 1 },
+      { id: 'tue', label: '매주 화', day: 2 },
+      { id: 'wed', label: '매주 수', day: 3 },
+      { id: 'thu', label: '매주 목', day: 4 },
+      { id: 'fri', label: '매주 금', day: 5 }
+    ];
+
     const state = {
       view: 'daily',
       selectedDate: toDateKey(new Date()),
@@ -4894,7 +4926,7 @@
       advertiserFilter: [],
       weeklyAdvertiserFilter: [],
       sortMode: 'smart',
-      tableSort: { field: 'date', direction: 'asc' },
+      tableSort: { field: 'manual', direction: 'asc' },
       editingId: null,
       taskDialogMode: 'edit',
       lastUndo: null,
@@ -4904,6 +4936,7 @@
       advertiserPickerTaskId: null,
       advertiserOrderDragging: false,
       advertiserCardDragging: null,
+      dailyTaskDragging: null,
       lastTaskDragEndAt: 0,
       theme: document.documentElement.dataset.theme || 'light',
     };
@@ -4915,11 +4948,11 @@
     function cacheDom() {
       [
         'importInput', 'main', 'viewTitle', 'viewSubtitle', 'periodDateNav', 'periodBadge', 'periodPresetMenu', 'selectedStartDateInput', 'selectedEndDateInput', 'themeToggle', 'themeIcon',
-        'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine',
+        'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine', 'taskRoutineDay',
         'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone',
         'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'weeklyBoard',
         'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
-        'taskDialog', 'dialogTitle', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editDeleteBtn', 'editSubmitBtn',
+        'taskDialog', 'dialogTitle', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editRoutineDay', 'editDeleteBtn', 'editSubmitBtn',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
         'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'historyDialog', 'historyStatus', 'historyList', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
         'afgAll', 'afgMe', 'afgSearch', 'assigneeSearchInput', 'myTasksBtn', 'loginScreen', 'loginName', 'loginPass', 'loginBtn', 'loginError', 'userBadge', 'userBadgeName'
@@ -5148,6 +5181,91 @@
       return hour ? `~${hour}시` : '~N시';
     }
 
+    function normalizeRoutineDay(value) {
+      const raw = String(value || '').trim().toLowerCase();
+      const aliases = {
+        everyday: 'daily',
+        every: 'daily',
+        daily: 'daily',
+        all: 'daily',
+        monday: 'mon',
+        mon: 'mon',
+        월: 'mon',
+        tuesday: 'tue',
+        tue: 'tue',
+        화: 'tue',
+        wednesday: 'wed',
+        wed: 'wed',
+        수: 'wed',
+        thursday: 'thu',
+        thu: 'thu',
+        목: 'thu',
+        friday: 'fri',
+        fri: 'fri',
+        금: 'fri'
+      };
+      return ROUTINE_DAYS.some(item => item.id === raw) ? raw : (aliases[raw] || 'daily');
+    }
+
+    function renderRoutineDayOptions(selected) {
+      const value = normalizeRoutineDay(selected);
+      return ROUTINE_DAYS
+        .map(item => `<option value="${item.id}" ${value === item.id ? 'selected' : ''}>${item.label}</option>`)
+        .join('');
+    }
+
+    function getDateWeekday(dateKey) {
+      return new Date(`${dateKey}T00:00:00`).getDay();
+    }
+
+    function routineRunsOnDate(routine, dateKey) {
+      const day = normalizeRoutineDay(routine?.routineDay || routine?.repeatDay || routine?.schedule);
+      if (day === 'daily') return true;
+      const option = ROUTINE_DAYS.find(item => item.id === day);
+      return option?.day === getDateWeekday(dateKey);
+    }
+
+    function getRoutineForTask(task) {
+      return task?.routineId ? state.routines.find(routine => routine.id === task.routineId) : null;
+    }
+
+    function getTaskRoutineDay(task) {
+      const routine = getRoutineForTask(task);
+      return normalizeRoutineDay(routine?.routineDay || task?.routineDay);
+    }
+
+    function routineTaskRunsOnDate(task, dateKey = task?.date) {
+      if (!task?.isRoutine && !task?.routineId) return true;
+      const routine = getRoutineForTask(task);
+      return routineRunsOnDate(routine || task, dateKey);
+    }
+
+    function shouldShowRoutineTaskInRange(task, start, end) {
+      if (!task?.isRoutine && !task?.routineId) return true;
+      if (!routineTaskRunsOnDate(task, task.date)) return false;
+      if (!start || !end || daysBetween(start, end) < 1) return true;
+      return task.date === toDateKey(new Date());
+    }
+
+    function getTaskOrderValue(task) {
+      const raw = Number(task?.order);
+      if (Number.isFinite(raw)) return raw;
+      const created = Date.parse(task?.createdAt || '');
+      return Number.isFinite(created) ? created : Number.MAX_SAFE_INTEGER;
+    }
+
+    function compareDailyManualOrder(a, b) {
+      const orderDiff = getTaskOrderValue(a) - getTaskOrderValue(b);
+      if (orderDiff) return orderDiff;
+      return stableDailyCompare(a, b);
+    }
+
+    function getNextTaskOrder(assignee, advertiser) {
+      const sameGroup = state.tasks.filter(task => task.assignee === assignee && task.advertiser === advertiser);
+      const maxOrder = sameGroup.reduce((max, task) => Math.max(max, Number.isFinite(Number(task.order)) ? Number(task.order) : 0), 0);
+      return maxOrder + 1000;
+    }
+
     function normalizeAdvertiserKeyword(value) {
       return String(value || '').toLowerCase().replace(/\s+/g, '');
     }
@@ -5158,6 +5276,7 @@
       const endDate = rawEndDate < date ? date : rawEndDate;
       const rawDeadline = task.deadline || endDate;
       const deadline = rawDeadline < date ? date : rawDeadline;
+      const order = Number(task.order);
       return {
         id: task.id || uid('task'),
         title: String(task.title || '').trim() || '제목 없음',
@@ -5173,7 +5292,9 @@
         priority: normalizePriority(task.priority),
         memo: task.memo || '',
         isRoutine: Boolean(task.isRoutine),
+        routineDay: normalizeRoutineDay(task.routineDay || task.repeatDay || task.schedule),
         routineId: task.routineId || null,
+        order: Number.isFinite(order) ? order : null,
         createdAt: task.createdAt || new Date().toISOString(),
         updatedAt: task.updatedAt || null
       };
@@ -5189,6 +5310,7 @@
         priority: normalizePriority(routine.priority),
         memo: routine.memo || '',
         time: normalizeTaskTime(routine.time || ''),
+        routineDay: normalizeRoutineDay(routine.routineDay || routine.repeatDay || routine.schedule),
         createdAt: routine.createdAt || new Date().toISOString()
       };
     }
@@ -5344,12 +5466,14 @@
     function materializeRoutinesForDate(dateKey) {
       let changed = false;
       state.routines.forEach(routine => {
+        if (!routineRunsOnDate(routine, dateKey)) return;
         const exists = state.tasks.some(task => task.routineId === routine.id && task.date === dateKey);
         if (!exists) {
+          const assignee = routine.assignee || '';
           state.tasks.push(normalizeTask({
             title: routine.title,
             advertiser: routine.advertiser,
-            assignee: routine.assignee || '',
+            assignee,
             date: dateKey,
             deadline: dateKey,
             endDate: dateKey,
@@ -5359,7 +5483,9 @@
             memo: routine.memo,
             time: routine.time || '',
             isRoutine: true,
-            routineId: routine.id
+            routineDay: routine.routineDay,
+            routineId: routine.id,
+            order: getNextTaskOrder(assignee, routine.advertiser)
           }));
           changed = true;
         }
@@ -5434,6 +5560,7 @@
         const last = dates[dates.length - 1];
         return assignedTasks.filter(task => {
           const taskEnd = task.endDate || task.date;
+          if (!shouldShowRoutineTaskInRange(task, first, last)) return false;
           return task.date <= last && taskEnd >= first;
         });
       }
@@ -5457,6 +5584,7 @@
         }
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
+        if (!shouldShowRoutineTaskInRange(task, start, end)) return false;
         return true;
       });
     }
@@ -5478,6 +5606,7 @@
         const { start, end } = getFilterRange();
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
+        if (!shouldShowRoutineTaskInRange(task, start, end)) return false;
         if (state.filters.hideDone && task.status === 'done') return false;
         return true;
       });
@@ -5498,6 +5627,7 @@
       if (field === 'date') return task.date;
       if (field === 'deadline') return task.deadline || task.endDate || task.date;
       if (field === 'time') return Number(normalizeTaskTime(task.time) || 99);
+      if (field === 'manual') return getTaskOrderValue(task);
       if (field === 'advertiser') {
         const index = getAdvertisers().indexOf(task.advertiser);
         return index < 0 ? Number.MAX_SAFE_INTEGER : index;
@@ -5521,6 +5651,7 @@
     function sortTasks(tasks) {
       return [...tasks].sort((a, b) => {
         if (state.view === 'daily' && state.tableSort?.field) {
+          if (state.tableSort.field === 'manual') return compareDailyManualOrder(a, b);
           const base = compareField(a, b, state.tableSort.field);
           if (base !== 0) return state.tableSort.direction === 'asc' ? base : -base;
           return stableDailyCompare(a, b);
@@ -5723,7 +5854,7 @@
     function resetFilters() {
       state.filters = { query: '', advertiser: 'all', status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: state.selectedDate, endDate: addDays(state.selectedDate, 6), hideDone: false };
       state.sortMode = 'smart';
-      state.tableSort = { field: 'status', direction: 'asc' };
+      state.tableSort = { field: 'manual', direction: 'asc' };
       render();
       showToast('필터를 초기화했습니다.');
     }
@@ -5775,6 +5906,7 @@
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
+        if (!shouldShowRoutineTaskInRange(task, start, end)) return false;
         return true;
       }));
       dom.routineSummary.textContent = '루틴 업무';
@@ -5798,7 +5930,7 @@
       const tasks = viewTasks();
       renderDailyStatusSummary();
       dom.dailyList.innerHTML = tasks.length ? renderDailyGroups(tasks) : `
-        <tr><td colspan="11"><div class="empty">아직 업무가 없습니다.<br>위에서 업무명과 광고주만 입력하면 바로 추가됩니다.</div></td></tr>
+        <tr><td colspan="12"><div class="empty">아직 업무가 없습니다.<br>위에서 업무명과 광고주만 입력하면 바로 추가됩니다.</div></td></tr>
       `;
       renderSortIndicators();
     }
@@ -5811,7 +5943,7 @@
       const urgentCount = tasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length;
       return `
         <tr class="daily-advertiser-section ${advertiserToneClass(advertiser)} ${sectionClass}" data-daily-group="${escapeHtml(advertiser)}" data-group-index="${groupIndex}">
-          <td colspan="11">
+          <td colspan="12">
             <div class="daily-group-chip">
               <span class="daily-group-title">
                 <strong>${escapeHtml(advertiser)}</strong>
@@ -5844,10 +5976,10 @@
         const sectionClass = `assignee-section-row assignee-section-${idx % 4}${isSelf ? ' is-self-section' : ''}`;
         const advertisers = getAdvertisers(assigneeTasks).filter(adv => assigneeTasks.some(t => t.advertiser === adv));
         const advertiserRows = advertisers.map((adv, i) => renderAdvertiserGroup(assigneeTasks.filter(t => t.advertiser === adv), adv, i, sectionClass)).join('');
-        const separator = idx > 0 ? '<tr class="daily-section-separator"><td colspan="11"></td></tr>' : '';
+        const separator = idx > 0 ? '<tr class="daily-section-separator"><td colspan="12"></td></tr>' : '';
         return `${separator}
           <tr class="daily-assignee-top ${sectionClass}">
-            <td colspan="11">
+            <td colspan="12">
               <div class="daily-assignee-top-header${isSelf ? ' is-self' : ''}">
                 <span class="daily-assignee-avatar" aria-hidden="true">${escapeHtml(assigneeName.charAt(0))}</span>
                 <span class="daily-assignee-heading">
@@ -5903,9 +6035,14 @@
       const completed = task.status === 'done';
       const deadline = task.deadline || task.endDate || task.date;
       const mine = isMine(task);
+      const routineEnabled = Boolean(task.isRoutine || task.routineId);
+      const routineDay = getTaskRoutineDay(task);
       return `
-        <tr class="task-row ${task.status} ${completed ? 'is-complete' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${advertiserToneClass(task.advertiser)} ${sectionClass} ${mine ? '' : 'is-readonly'}" data-task-id="${task.id}">
+        <tr class="task-row ${task.status} ${completed ? 'is-complete' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${routineEnabled ? 'is-routine-task' : ''} ${advertiserToneClass(task.advertiser)} ${sectionClass} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-daily-task-row data-task-id="${task.id}">
           <td class="copy-cell">
+            <button class="daily-drag-handle" type="button" draggable="${mine}" data-daily-drag-handle aria-label="${escapeHtml(task.title)} 이동" title="드래그해서 업무 이동">
+              <span aria-hidden="true">⋮⋮</span>
+            </button>
             <button class="copy-task-btn" type="button" data-action="copy-task" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 복사" title="업무 복사">
               <span aria-hidden="true">⧉</span>
             </button>
@@ -5944,9 +6081,14 @@
           </td>
           <td class="routine-cell" data-label="루틴">
             <label class="task-routine-check" title="매일 반복 여부 변경">
-              <input type="checkbox" data-action="toggle-task-routine" data-task-id="${task.id}" ${task.isRoutine || task.routineId ? 'checked' : ''} />
+              <input type="checkbox" data-action="toggle-task-routine" data-task-id="${task.id}" ${routineEnabled ? 'checked' : ''} />
               <span aria-hidden="true"></span>
             </label>
+          </td>
+          <td class="routine-day-cell" data-label="루틴요일">
+            <select class="inline-select routine-day-select" data-action="change-routine-day" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 루틴요일 변경" ${routineEnabled ? '' : 'disabled'}>
+              ${renderRoutineDayOptions(routineDay)}
+            </select>
           </td>
           <td class="complete-cell" data-label="완료">
             <label class="task-complete-check" title="완료 여부 변경">
@@ -6056,7 +6198,8 @@
     function renderMiniTask(task, weekDates, laneIndex = 0) {
       const visibleStart = weekDates[0];
       const visibleEnd = weekDates[weekDates.length - 1];
-      const taskEndDate = task.deadline || task.endDate || task.date;
+      const routineEnabled = Boolean(task.isRoutine || task.routineId);
+      const taskEndDate = routineEnabled ? task.date : (task.deadline || task.endDate || task.date);
       if (task.date > visibleEnd || taskEndDate < visibleStart) return '';
 
       const clippedStart = task.date < visibleStart ? visibleStart : task.date;
@@ -6065,18 +6208,20 @@
       const endIndex = Math.max(startIndex, weekDates.indexOf(clippedEnd));
       const totalDays = daysBetween(task.date, taskEndDate) + 1;
       const deadlineLabel = taskEndDate.slice(5).replace('-', '.');
-      const rangeLabel = totalDays > 1 ? `<span class="weekly-task-duration" title="데드라인 ${formatWeekHeaderDate(taskEndDate)}">마감 ${deadlineLabel}</span>` : '';
+      const rangeLabel = !routineEnabled && totalDays > 1 ? `<span class="weekly-task-duration" title="데드라인 ${formatWeekHeaderDate(taskEndDate)}">마감 ${deadlineLabel}</span>` : '';
+      const resizeStart = routineEnabled ? '' : `<button class="weekly-resize-handle is-start" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 요일 변경" title="드래그해서 시작 요일 변경"><span aria-hidden="true"></span></button>`;
+      const resizeEnd = routineEnabled ? '' : `<button class="weekly-resize-handle is-end" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 요일 변경" title="드래그해서 종료 요일 변경"><span aria-hidden="true"></span></button>`;
 
       return `
-        <div class="mini-task timeline-task ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''}" draggable="true" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="클릭해서 업무 수정">
-          <button class="weekly-resize-handle is-start" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 요일 변경" title="드래그해서 시작 요일 변경"><span aria-hidden="true"></span></button>
+        <div class="mini-task timeline-task ${routineEnabled ? 'is-routine-task' : ''} ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''}" draggable="true" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="클릭해서 업무 수정">
+          ${resizeStart}
           <label class="card-complete-check" title="완료 여부 변경">
             <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} />
             <span aria-hidden="true"></span>
           </label>
           <strong>${escapeHtml(task.title)}</strong>
           ${rangeLabel}
-          <button class="weekly-resize-handle is-end" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 요일 변경" title="드래그해서 종료 요일 변경"><span aria-hidden="true"></span></button>
+          ${resizeEnd}
         </div>
       `;
     }
@@ -6188,10 +6333,12 @@
     }
 
     function addTaskFromForm() {
+      const assignee = CURRENT_USER || '';
+      const advertiser = dom.taskAdvertiser.value.trim();
       const payload = {
         title: dom.taskTitle.value.trim(),
-        advertiser: dom.taskAdvertiser.value.trim(),
-        assignee: CURRENT_USER || '',
+        advertiser,
+        assignee,
         date: dom.taskDate.value,
         deadline: dom.taskDate.value,
         endDate: dom.taskDate.value,
@@ -6199,7 +6346,9 @@
         status: dom.taskStatus.value,
         priority: dom.taskPriority.value,
         memo: dom.taskMemo.value.trim(),
-        isRoutine: dom.taskRoutine.checked
+        isRoutine: dom.taskRoutine.checked,
+        routineDay: dom.taskRoutine.checked ? normalizeRoutineDay(dom.taskRoutineDay?.value) : 'daily',
+        order: getNextTaskOrder(assignee, advertiser)
       };
       if (!payload.title || !payload.advertiser || !payload.date) return false;
 
@@ -6361,6 +6510,7 @@
         .filter(name => name === 'assignee-section-row' || name === 'is-self-section' || name === 'is-unassigned-section' || name.startsWith('assignee-section-'))
         .join(' ');
       row.outerHTML = renderTaskRow(task, sectionClass);
+      bindDragSources();
       renderDailyStatusSummary();
       renderStats();
       refreshDailyGroupHeader(task.advertiser);
@@ -6419,6 +6569,7 @@
         endDate: task.deadline || task.endDate || task.date,
         status: 'todo',
         previousStatus: 'todo',
+        order: getNextTaskOrder(task.assignee, task.advertiser),
         createdAt: new Date().toISOString(),
         updatedAt: null
       });
@@ -6446,6 +6597,7 @@
     function updateTask(id, patch) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
+      const previousAdvertiser = task.advertiser;
       const nextPatch = { ...patch };
       if (nextPatch.date && !nextPatch.endDate && !nextPatch.deadline) {
         const duration = daysBetween(task.date, task.deadline || task.endDate || task.date);
@@ -6464,6 +6616,10 @@
       if (nextPatch.status && nextPatch.status !== 'done') {
         task.previousStatus = nextPatch.status;
       }
+      if (nextPatch.routineDay) nextPatch.routineDay = normalizeRoutineDay(nextPatch.routineDay);
+      if (nextPatch.advertiser && nextPatch.advertiser !== previousAdvertiser && !Object.prototype.hasOwnProperty.call(nextPatch, 'order')) {
+        nextPatch.order = getNextTaskOrder(task.assignee, nextPatch.advertiser);
+      }
       Object.assign(task, normalizeTask({ ...task, ...nextPatch }), { updatedAt: new Date().toISOString() });
       if (task.routineId) {
         const routine = state.routines.find(item => item.id === task.routineId);
@@ -6474,6 +6630,7 @@
           if (Object.prototype.hasOwnProperty.call(nextPatch, 'type')) routine.type = task.type;
           if (Object.prototype.hasOwnProperty.call(nextPatch, 'memo')) routine.memo = task.memo;
           if (Object.prototype.hasOwnProperty.call(nextPatch, 'time')) routine.time = task.time;
+          if (Object.prototype.hasOwnProperty.call(nextPatch, 'routineDay')) routine.routineDay = task.routineDay;
         }
       }
       if (nextPatch.advertiser) registerAdvertiser(nextPatch.advertiser);
@@ -6537,12 +6694,155 @@
         task.endDate = addDays(patch.date, duration);
         task.deadline = task.endDate;
       }
-      if (patch.advertiser) task.advertiser = patch.advertiser;
+      if (patch.advertiser) {
+        if (patch.advertiser !== task.advertiser) task.order = getNextTaskOrder(task.assignee, patch.advertiser);
+        task.advertiser = patch.advertiser;
+      }
       task.updatedAt = new Date().toISOString();
       logHistory('TASK_MOVE', `"${task.title}" 업무를 이동했습니다`);
       save();
       render();
       showToast('업무를 이동했습니다.');
+    }
+
+    function setTaskRoutineDay(id, value) {
+      const task = state.tasks.find(item => item.id === id);
+      if (!task || !isMine(task)) return;
+      if (!task.isRoutine && !task.routineId) return;
+      const routineDay = normalizeRoutineDay(value);
+      task.routineDay = routineDay;
+      task.updatedAt = new Date().toISOString();
+      if (task.routineId) {
+        const routine = state.routines.find(item => item.id === task.routineId);
+        if (routine) routine.routineDay = routineDay;
+        state.tasks.forEach(item => {
+          if (item.routineId === task.routineId) item.routineDay = routineDay;
+        });
+      }
+      logHistory('ROUTINE_DAY', `"${task.title}" 루틴요일을 ${ROUTINE_DAYS.find(item => item.id === routineDay)?.label || '매일'}로 변경했습니다`);
+      save();
+      renderCurrentViewOnly({ refreshShell: false, refreshOptions: false, animate: false });
+      showToast('루틴요일을 변경했습니다.');
+    }
+
+    function getDailyManualGroupTasks(assignee, advertiser) {
+      return state.tasks
+        .filter(task => task.assignee === assignee && task.advertiser === advertiser && !isUnassignedRecord(task))
+        .sort(compareDailyManualOrder);
+    }
+
+    function reorderDailyTask(taskId, { advertiser, targetTaskId = null, insertAfter = false } = {}) {
+      const task = state.tasks.find(item => item.id === taskId);
+      if (!task || !isMine(task)) return;
+      const targetAdvertiser = normalizeAdvertiserName(advertiser || task.advertiser);
+      if (!targetAdvertiser) return;
+      const previousAdvertiser = task.advertiser;
+      if (targetTaskId === taskId && previousAdvertiser === targetAdvertiser) return;
+
+      task.advertiser = targetAdvertiser;
+      registerAdvertiser(targetAdvertiser);
+
+      const groupTasks = getDailyManualGroupTasks(task.assignee, targetAdvertiser).filter(item => item.id !== task.id);
+      let insertIndex = groupTasks.length;
+      if (targetTaskId) {
+        const targetIndex = groupTasks.findIndex(item => item.id === targetTaskId);
+        if (targetIndex >= 0) insertIndex = targetIndex + (insertAfter ? 1 : 0);
+      }
+      groupTasks.splice(insertIndex, 0, task);
+      groupTasks.forEach((item, index) => {
+        item.order = (index + 1) * 1000;
+      });
+      task.updatedAt = new Date().toISOString();
+      state.tableSort = { field: 'manual', direction: 'asc' };
+      logHistory('TASK_REORDER', previousAdvertiser === targetAdvertiser
+        ? `"${task.title}" 업무 순서를 변경했습니다`
+        : `"${task.title}" 업무를 ${targetAdvertiser} 영역으로 이동했습니다`);
+      save();
+      renderDailyOnly({ refreshShell: false, refreshOptions: previousAdvertiser !== targetAdvertiser, refreshStats: true, animate: false });
+      showToast(previousAdvertiser === targetAdvertiser ? '업무 순서를 변경했습니다.' : '업무를 다른 광고주 영역으로 이동했습니다.');
+    }
+
+    function clearDailyDropPreview() {
+      qsa('.daily-drop-target, .daily-drop-after, .daily-group-drop-target', dom.dailyList).forEach(el => {
+        el.classList.remove('daily-drop-target', 'daily-drop-after', 'daily-group-drop-target');
+      });
+    }
+
+    let dailyPointerDragState = null;
+
+    function getDailyDropIntent(event) {
+      const row = event.target.closest('tr.task-row[data-daily-task-row]');
+      if (row) {
+        const rect = row.getBoundingClientRect();
+        const insertAfter = event.clientY > rect.top + rect.height / 2;
+        const targetTask = state.tasks.find(task => task.id === row.dataset.taskId);
+        return targetTask ? { element: row, advertiser: targetTask.advertiser, targetTaskId: targetTask.id, insertAfter } : null;
+      }
+      const group = event.target.closest('tr.daily-advertiser-section[data-daily-group]');
+      if (group) {
+        return { element: group, advertiser: group.dataset.dailyGroup, targetTaskId: null, insertAfter: true, groupOnly: true };
+      }
+      return null;
+    }
+
+    function getDailyDropIntentFromPoint(clientX, clientY) {
+      const element = document.elementFromPoint(clientX, clientY);
+      return element ? getDailyDropIntent({ target: element, clientY }) : null;
+    }
+
+    function beginDailyPointerDrag(event, handle) {
+      const row = handle.closest('tr.task-row[data-daily-task-row]');
+      if (!row || row.classList.contains('is-readonly')) return;
+      dailyPointerDragState = {
+        pointerId: event.pointerId,
+        handle,
+        row,
+        taskId: row.dataset.taskId,
+        startX: event.clientX,
+        startY: event.clientY,
+        dragging: false,
+        intent: null
+      };
+      handle.setPointerCapture?.(event.pointerId);
+    }
+
+    function updateDailyPointerDrag(event) {
+      if (!dailyPointerDragState || event.pointerId !== dailyPointerDragState.pointerId) return;
+      const dx = Math.abs(event.clientX - dailyPointerDragState.startX);
+      const dy = Math.abs(event.clientY - dailyPointerDragState.startY);
+      if (!dailyPointerDragState.dragging && dx + dy < 6) return;
+      event.preventDefault();
+      dailyPointerDragState.dragging = true;
+      state.dailyTaskDragging = dailyPointerDragState.taskId;
+      dailyPointerDragState.row.classList.add('dragging');
+      const intent = getDailyDropIntentFromPoint(event.clientX, event.clientY);
+      dailyPointerDragState.intent = intent;
+      clearDailyDropPreview();
+      if (!intent) return;
+      if (intent.groupOnly) {
+        intent.element.classList.add('daily-group-drop-target');
+      } else {
+        intent.element.classList.add('daily-drop-target');
+        intent.element.classList.toggle('daily-drop-after', intent.insertAfter);
+      }
+    }
+
+    function finishDailyPointerDrag(event, cancelled = false) {
+      if (!dailyPointerDragState || event.pointerId !== dailyPointerDragState.pointerId) return false;
+      const current = dailyPointerDragState;
+      dailyPointerDragState = null;
+      current.handle.releasePointerCapture?.(event.pointerId);
+      current.row.classList.remove('dragging');
+      state.dailyTaskDragging = null;
+      clearDailyDropPreview();
+      if (!cancelled && current.dragging && current.intent) {
+        reorderDailyTask(current.taskId, {
+          advertiser: current.intent.advertiser,
+          targetTaskId: current.intent.targetTaskId,
+          insertAfter: current.intent.insertAfter
+        });
+      }
+      return true;
     }
 
     function toggleTaskRoutine(id, enabled) {
@@ -6559,11 +6859,13 @@
             type: task.type,
             priority: task.priority,
             memo: task.memo,
-            time: task.time || ''
+            time: task.time || '',
+            routineDay: getTaskRoutineDay(task)
           });
           state.routines.push(routine);
         }
         task.isRoutine = true;
+        task.routineDay = routine.routineDay;
         task.routineId = routine.id;
         materializeRoutinesForWeek();
         logHistory('ROUTINE_ENABLE', `"${task.title}" 업무를 매일 반복 루틴으로 설정했습니다`);
@@ -6581,6 +6883,7 @@
       const current = state.tasks.find(item => item.id === id);
       if (current) {
         current.isRoutine = false;
+        current.routineDay = 'daily';
         current.routineId = null;
       }
       logHistory('ROUTINE_DISABLE', `"${task.title}" 업무의 반복 루틴을 해제했습니다`);
@@ -6713,6 +7016,12 @@
       if (dom.editTime) dom.editTime.value = normalizeTaskTime(task.time);
       dom.editPriority.value = task.priority;
       dom.editStatus.value = task.status === 'done' ? task.previousStatus : task.status;
+      if (dom.editRoutineDay) {
+        const routineEnabled = Boolean(task.isRoutine || task.routineId);
+        dom.editRoutineDay.value = getTaskRoutineDay(task);
+        dom.editRoutineDay.disabled = !routineEnabled;
+        dom.editRoutineDay.closest('.field')?.classList.toggle('is-disabled', !routineEnabled);
+      }
       dom.editMemo.value = task.memo;
       dom.editDeleteBtn.hidden = !isMine(task);
       dom.taskDialog.showModal();
@@ -6732,6 +7041,11 @@
       if (dom.editTime) dom.editTime.value = '';
       dom.editPriority.value = 'normal';
       dom.editStatus.value = 'todo';
+      if (dom.editRoutineDay) {
+        dom.editRoutineDay.value = 'daily';
+        dom.editRoutineDay.disabled = true;
+        dom.editRoutineDay.closest('.field')?.classList.add('is-disabled');
+      }
       dom.editMemo.value = '';
       dom.editDeleteBtn.hidden = true;
       dom.taskDialog.showModal();
@@ -6903,9 +7217,39 @@
     }
 
     function bindDragSources() {
+      qsa('[data-daily-drag-handle]').forEach(handle => {
+        if (handle.dataset.dragBound === 'true') return;
+        handle.dataset.dragBound = 'true';
+        handle.addEventListener('dragstart', event => {
+          const row = handle.closest('[data-daily-task-row]');
+          if (!row || row.classList.contains('is-readonly')) {
+            event.preventDefault();
+            return;
+          }
+          row.classList.add('dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', row.dataset.taskId);
+          event.dataTransfer.setData('application/x-daily-task', row.dataset.taskId);
+          state.dailyTaskDragging = row.dataset.taskId;
+        });
+        handle.addEventListener('dragend', () => {
+          const row = handle.closest('[data-daily-task-row]');
+          row?.classList.remove('dragging');
+          state.dailyTaskDragging = null;
+          clearDailyDropPreview();
+          state.lastTaskDragEndAt = Date.now();
+        });
+      });
       qsa('[data-task-id][draggable="true"]').forEach(item => {
+        if (item.dataset.dragBound === 'true') return;
+        item.dataset.dragBound = 'true';
         item.addEventListener('dragstart', event => {
-          if (event.target.closest('.card-complete-check, [data-weekly-resize-handle]')) {
+          const isDailyRow = item.matches('[data-daily-task-row]');
+          if (isDailyRow && !event.target.closest('[data-daily-drag-handle]')) {
+            event.preventDefault();
+            return;
+          }
+          if (!isDailyRow && event.target.closest('.card-complete-check, [data-weekly-resize-handle]')) {
             event.preventDefault();
             return;
           }
@@ -6913,9 +7257,15 @@
           item.classList.add('dragging');
           event.dataTransfer.effectAllowed = 'move';
           event.dataTransfer.setData('text/plain', item.dataset.taskId);
+          if (isDailyRow) {
+            state.dailyTaskDragging = item.dataset.taskId;
+            event.dataTransfer.setData('application/x-daily-task', item.dataset.taskId);
+          }
         });
         item.addEventListener('dragend', () => {
           item.classList.remove('dragging');
+          state.dailyTaskDragging = null;
+          clearDailyDropPreview();
           state.lastTaskDragEndAt = Date.now();
         });
       });
@@ -7125,12 +7475,26 @@
 
     function bindEvents() {
       document.addEventListener('pointerdown', event => {
+        const dailyHandle = event.target.closest('[data-daily-drag-handle]');
+        if (dailyHandle) {
+          beginDailyPointerDrag(event, dailyHandle);
+          return;
+        }
         const handle = event.target.closest('[data-weekly-resize-handle]');
         if (handle) beginWeeklyResize(event, handle);
       });
-      document.addEventListener('pointermove', updateWeeklyResize, { passive: false });
-      document.addEventListener('pointerup', event => finishWeeklyResize(event));
-      document.addEventListener('pointercancel', event => finishWeeklyResize(event, true));
+      document.addEventListener('pointermove', event => {
+        updateDailyPointerDrag(event);
+        updateWeeklyResize(event);
+      }, { passive: false });
+      document.addEventListener('pointerup', event => {
+        if (finishDailyPointerDrag(event)) return;
+        finishWeeklyResize(event);
+      });
+      document.addEventListener('pointercancel', event => {
+        if (finishDailyPointerDrag(event, true)) return;
+        finishWeeklyResize(event, true);
+      });
 
       document.addEventListener('click', event => {
         const target = event.target.closest('[data-action], [data-sort-field]');
@@ -7315,6 +7679,8 @@
         if (timeInput) { updateTask(timeInput.dataset.taskId, { time: timeInput.value }); return; }
         const prioritySelect = event.target.closest('[data-action="change-priority"]');
         if (prioritySelect) { updateTask(prioritySelect.dataset.taskId, { priority: prioritySelect.value }); return; }
+        const routineDaySelect = event.target.closest('[data-action="change-routine-day"]');
+        if (routineDaySelect) { setTaskRoutineDay(routineDaySelect.dataset.taskId, routineDaySelect.value); return; }
         const routineCheck = event.target.closest('[data-action="toggle-routine-complete"]');
         if (routineCheck) {
           setTaskCompletion(routineCheck.dataset.taskId, routineCheck.checked);
@@ -7323,6 +7689,10 @@
         const taskRoutine = event.target.closest('[data-action="toggle-task-routine"]');
         if (taskRoutine) {
           toggleTaskRoutine(taskRoutine.dataset.taskId, taskRoutine.checked);
+          return;
+        }
+        if (event.target === dom.taskRoutine && dom.taskRoutineDay) {
+          dom.taskRoutineDay.disabled = !dom.taskRoutine.checked;
           return;
         }
         const taskComplete = event.target.closest('[data-action="toggle-task-complete"]');
@@ -7380,6 +7750,19 @@
 
       document.addEventListener('dragover', event => {
         if (state.advertiserCardDragging || event.target.closest('.advertiser-order-item')) return;
+        if (state.dailyTaskDragging) {
+          const intent = getDailyDropIntent(event);
+          if (!intent) return;
+          event.preventDefault();
+          clearDailyDropPreview();
+          if (intent.groupOnly) {
+            intent.element.classList.add('daily-group-drop-target');
+          } else {
+            intent.element.classList.add('daily-drop-target');
+            intent.element.classList.toggle('daily-drop-after', intent.insertAfter);
+          }
+          return;
+        }
         const zone = event.target.closest('[data-dropzone]');
         if (!zone) return;
         event.preventDefault();
@@ -7387,12 +7770,26 @@
       });
 
       document.addEventListener('dragleave', event => {
+        if (state.dailyTaskDragging && !event.relatedTarget?.closest?.('#dailyList')) clearDailyDropPreview();
         const zone = event.target.closest('[data-dropzone]');
         if (zone) zone.classList.remove('is-over');
       });
 
       document.addEventListener('drop', event => {
         if (state.advertiserCardDragging || event.target.closest('.advertiser-order-item')) return;
+        const dailyTaskId = event.dataTransfer.getData('application/x-daily-task');
+        if (dailyTaskId) {
+          const intent = getDailyDropIntent(event);
+          if (!intent) return;
+          event.preventDefault();
+          clearDailyDropPreview();
+          reorderDailyTask(dailyTaskId, {
+            advertiser: intent.advertiser,
+            targetTaskId: intent.targetTaskId,
+            insertAfter: intent.insertAfter
+          });
+          return;
+        }
         const zone = event.target.closest('[data-dropzone]');
         if (!zone) return;
         event.preventDefault();
@@ -7434,6 +7831,10 @@
         dom.taskDate.value = lastDate;
         if (dom.taskTime) dom.taskTime.value = '';
         dom.taskPriority.value = 'normal';
+        if (dom.taskRoutineDay) {
+          dom.taskRoutineDay.value = 'daily';
+          dom.taskRoutineDay.disabled = true;
+        }
         dom.taskTitle.focus();
       });
 
@@ -7465,7 +7866,8 @@
             priority: dom.editPriority.value,
             status: dom.editStatus.value,
             previousStatus: dom.editStatus.value,
-            memo: dom.editMemo.value
+            memo: dom.editMemo.value,
+            order: getNextTaskOrder(CURRENT_USER || '', dom.editAdvertiser.value)
           });
           state.tasks.push(payload);
           registerAdvertiser(payload.advertiser);
@@ -7478,7 +7880,7 @@
         }
         if (!state.editingId) return;
         const editingTask = state.tasks.find(task => task.id === state.editingId);
-        updateTask(state.editingId, {
+        const patch = {
           title: dom.editTitle.value,
           advertiser: dom.editAdvertiser.value,
           date: dom.editDate.value,
@@ -7488,7 +7890,9 @@
           status: editingTask?.status === 'done' ? 'done' : dom.editStatus.value,
           previousStatus: dom.editStatus.value,
           memo: dom.editMemo.value
-        });
+        };
+        if (editingTask?.isRoutine || editingTask?.routineId) patch.routineDay = normalizeRoutineDay(dom.editRoutineDay?.value);
+        updateTask(state.editingId, patch);
         closeEditDialog();
       });
 

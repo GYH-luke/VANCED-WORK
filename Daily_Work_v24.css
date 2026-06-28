@@ -1149,3 +1149,136 @@ html[data-theme="dark"] .daily-ai-output { color:#edf5ff!important; }
   #weeklyBoard .weekly-focus-wrap { min-height:auto; }
   #weeklyBoard .focus-field { min-height:88px!important; }
 }
+
+/* Daily routine day and manual ordering */
+.task-table {
+  --daily-grid:52px 132px 132px 70px 176px minmax(520px,1.75fr) 88px 108px 64px 96px 64px 78px!important;
+  min-width:1640px!important;
+}
+.copy-cell {
+  gap:5px!important;
+  padding-left:8px!important;
+  padding-right:7px!important;
+}
+.daily-drag-handle {
+  position:relative;
+  width:22px;
+  height:34px;
+  min-width:22px;
+  padding:0;
+  display:inline-grid;
+  place-items:center;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--adv-accent,#64748b);
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+}
+.daily-drag-handle:active { cursor:grabbing; }
+.daily-drag-handle::before {
+  content:"";
+  position:absolute;
+  left:1px;
+  top:6px;
+  bottom:6px;
+  width:3px;
+  border-radius:999px;
+  background:var(--adv-accent,#64748b);
+  opacity:.9;
+}
+.daily-drag-handle span {
+  margin-left:5px;
+  font-size:14px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:-4px;
+  color:currentColor;
+  opacity:.78;
+}
+.daily-drag-handle:hover,
+.daily-drag-handle:focus-visible {
+  outline:none;
+  background:color-mix(in srgb,var(--adv-accent,#64748b) 13%,transparent);
+}
+.task-row.dragging td {
+  opacity:.45;
+  filter:saturate(.8);
+}
+.task-row.daily-drop-target td {
+  box-shadow:inset 0 2px 0 var(--primary), inset 4px 0 0 var(--adv-accent,#64748b)!important;
+}
+.task-row.daily-drop-target.daily-drop-after td {
+  box-shadow:inset 0 -2px 0 var(--primary), inset 4px 0 0 var(--adv-accent,#64748b)!important;
+}
+.daily-advertiser-section.daily-group-drop-target td {
+  outline:2px solid var(--primary);
+  outline-offset:-3px;
+  background:color-mix(in srgb,var(--adv-bg,rgba(219,234,254,.72)) 72%,white 28%)!important;
+}
+.routine-day-column-head,
+.routine-day-cell {
+  justify-content:center!important;
+  text-align:center!important;
+}
+.routine-day-select {
+  width:88px!important;
+  min-width:82px!important;
+  max-width:90px!important;
+  height:32px!important;
+  min-height:32px!important;
+  padding:0 24px 0 9px!important;
+  font-size:11.5px!important;
+  font-weight:790!important;
+  text-align:center;
+  text-align-last:center;
+}
+.routine-day-select:disabled {
+  opacity:.38;
+  cursor:not-allowed;
+}
+.routine-day-field select:disabled,
+.field.is-disabled select {
+  opacity:.48;
+}
+.timeline-task.is-routine-task {
+  min-height:32px!important;
+  align-self:start;
+}
+.timeline-task.is-routine-task strong {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+@media (max-width:860px) {
+  .task-table { min-width:0!important; }
+  .task-table .copy-cell {
+    grid-column:1!important;
+    grid-row:1!important;
+    align-items:flex-start!important;
+    gap:3px!important;
+  }
+  .daily-drag-handle {
+    width:19px;
+    min-width:19px;
+    height:30px;
+  }
+  .daily-drag-handle span { font-size:12px; }
+  .task-table .title-cell { grid-column:2/4!important; grid-row:1!important; }
+  .task-table .complete-cell { grid-column:4!important; grid-row:1!important; justify-content:flex-end!important; }
+  .task-table .advertiser-picker-cell { grid-column:2/3!important; grid-row:2!important; }
+  .task-table .status-cell { grid-column:3/5!important; grid-row:2!important; }
+  .task-table .date-cell { grid-column:2/3!important; grid-row:3!important; }
+  .task-table .deadline-cell { grid-column:3/5!important; grid-row:3!important; display:flex!important; }
+  .task-table .time-cell { grid-column:2/3!important; grid-row:4!important; }
+  .task-table .priority-cell { grid-column:3/4!important; grid-row:4!important; }
+  .task-table .routine-cell { grid-column:4!important; grid-row:4!important; justify-content:flex-end!important; }
+  .task-table .routine-day-cell { grid-column:2/4!important; grid-row:5!important; justify-content:flex-start!important; }
+  .task-table .manage-cell { grid-column:4!important; grid-row:5!important; justify-content:flex-end!important; }
+  .routine-day-select {
+    width:104px!important;
+    max-width:112px!important;
+  }
+}
