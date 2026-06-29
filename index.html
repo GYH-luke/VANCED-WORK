@@ -3829,6 +3829,17 @@
     .task-row.is-readonly .status-select { pointer-events: none; opacity: 0.65; }
     .task-row.is-readonly .task-complete-check,
     .task-row.is-readonly .task-routine-check { pointer-events: none; opacity: 0.42; }
+    .weekly-row.is-readonly .weekly-cell { cursor: not-allowed; }
+    .weekly-row.is-readonly .weekly-cell:hover { background: inherit; }
+    .mini-task.is-readonly {
+      cursor: not-allowed;
+      opacity: 0.58;
+    }
+    .mini-task.is-readonly .card-complete-check,
+    .mini-task.is-readonly .weekly-resize-handle {
+      pointer-events: none;
+      opacity: 0.42;
+    }
 
     /* Assignee badge in 광고주탭 task cards */
     .card-assignee-badge {
@@ -4409,7 +4420,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 08:06 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 09:44 KST</span>
     </div>
   </footer>
 
@@ -4608,6 +4619,14 @@
       return !assignee || assignee === '미배정' || assignee === 'unassigned';
     }
     function isMine(task) { return task.assignee === CURRENT_USER; }
+    function canEditTask(task) { return Boolean(task && isMine(task)); }
+    function canEditAssignee(assignee) { return String(assignee || '') === String(CURRENT_USER || ''); }
+    function showReadonlyTaskToast() { showToast('다른 담당자의 업무는 수정할 수 없습니다.'); }
+    function blockReadonlyTask(task) {
+      if (canEditTask(task)) return false;
+      showReadonlyTaskToast();
+      return true;
+    }
     function syncAssigneeFilterUI() {
       if (!dom.afgAll) return;
       const mode = state.filters.assignee;
@@ -6107,29 +6126,30 @@
       const completed = task.status === 'done';
       const deadline = task.deadline || task.endDate || task.date;
       const mine = isMine(task);
+      const readonlyAttr = mine ? '' : 'disabled';
       const routineEnabled = Boolean(task.isRoutine || task.routineId);
       const routineDay = getTaskRoutineDay(task);
       return `
         <tr class="task-row ${task.status} ${completed ? 'is-complete' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${routineEnabled ? 'is-routine-task' : ''} ${advertiserToneClass(task.advertiser)} ${sectionClass} ${mine ? '' : 'is-readonly'}" draggable="false" data-daily-task-row data-task-id="${task.id}">
           <td class="copy-cell">
-            <button class="daily-drag-handle" type="button" draggable="false" data-daily-drag-handle aria-pressed="false" aria-label="${escapeHtml(task.title)} 순서 이동" title="눌러서 순서 변경 모드, 드래그로 직접 이동">
+            <button class="daily-drag-handle" type="button" draggable="false" data-daily-drag-handle aria-pressed="false" aria-label="${escapeHtml(task.title)} 순서 이동" title="눌러서 순서 변경 모드, 드래그로 직접 이동" ${readonlyAttr}>
               <span aria-hidden="true">⋮⋮</span>
             </button>
-            <button class="copy-task-btn" type="button" data-action="copy-task" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 복사" title="업무 복사">
+            <button class="copy-task-btn" type="button" data-action="copy-task" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 복사" title="업무 복사" ${readonlyAttr}>
               <span aria-hidden="true">⧉</span>
             </button>
           </td>
           <td class="date-cell" data-label="날짜">
-            <input class="inline-date" type="date" value="${task.date}" data-action="change-date" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 날짜 변경" />
+            <input class="inline-date" type="date" value="${task.date}" data-action="change-date" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 날짜 변경" ${readonlyAttr} />
           </td>
           <td class="deadline-cell" data-label="데드라인">
-            <input class="inline-date deadline-date ${deadline < toDateKey(new Date()) && !completed ? 'is-overdue' : ''}" type="date" value="${deadline}" data-action="change-deadline" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 데드라인 변경" />
+            <input class="inline-date deadline-date ${deadline < toDateKey(new Date()) && !completed ? 'is-overdue' : ''}" type="date" value="${deadline}" data-action="change-deadline" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 데드라인 변경" ${readonlyAttr} />
           </td>
           <td class="time-cell" data-label="시간">
-            <input class="inline-time" type="text" inputmode="numeric" value="${formatTaskTime(task.time)}" data-action="change-time" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시간 변경" placeholder="~N시" />
+            <input class="inline-time" type="text" inputmode="numeric" value="${formatTaskTime(task.time)}" data-action="change-time" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시간 변경" placeholder="~N시" ${readonlyAttr} />
           </td>
           <td class="advertiser-picker-cell" data-label="광고주">
-            <button class="advertiser-picker-trigger" type="button" data-action="open-advertiser-picker" data-task-id="${task.id}" aria-haspopup="dialog" aria-label="${escapeHtml(task.title)} 광고주 변경">
+            <button class="advertiser-picker-trigger" type="button" data-action="open-advertiser-picker" data-task-id="${task.id}" aria-haspopup="dialog" aria-label="${escapeHtml(task.title)} 광고주 변경" ${readonlyAttr}>
               <span>${escapeHtml(task.advertiser)}</span><i aria-hidden="true">⌄</i>
             </button>
           </td>
@@ -6140,31 +6160,31 @@
             </div>
           </td>
           <td class="priority-cell" data-label="우선">
-            <select class="inline-select priority-select ${task.priority}" data-action="change-priority" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 우선순위 변경">
+            <select class="inline-select priority-select ${task.priority}" data-action="change-priority" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 우선순위 변경" ${readonlyAttr}>
               ${renderPriorityOptions(task.priority)}
             </select>
           </td>
           <td class="status-cell" data-label="상태">
             <div class="status-cell-inner">
-              <select class="status-select ${task.status}" data-action="change-status" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 상태 변경">
+              <select class="status-select ${task.status}" data-action="change-status" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 상태 변경" ${readonlyAttr}>
                 ${renderWorkStatusOptions(task)}
               </select>
             </div>
           </td>
           <td class="routine-cell" data-label="루틴">
             <label class="task-routine-check" title="매일 반복 여부 변경">
-              <input type="checkbox" data-action="toggle-task-routine" data-task-id="${task.id}" ${routineEnabled ? 'checked' : ''} />
+              <input type="checkbox" data-action="toggle-task-routine" data-task-id="${task.id}" ${routineEnabled ? 'checked' : ''} ${readonlyAttr} />
               <span aria-hidden="true"></span>
             </label>
           </td>
           <td class="routine-day-cell" data-label="루틴요일">
-            <select class="inline-select routine-day-select" data-action="change-routine-day" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 루틴요일 변경" ${routineEnabled ? '' : 'disabled'}>
+            <select class="inline-select routine-day-select" data-action="change-routine-day" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 루틴요일 변경" ${routineEnabled && mine ? '' : 'disabled'}>
               ${renderRoutineDayOptions(routineDay)}
             </select>
           </td>
           <td class="complete-cell" data-label="완료">
             <label class="task-complete-check" title="완료 여부 변경">
-              <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${completed ? 'checked' : ''} />
+              <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${completed ? 'checked' : ''} ${readonlyAttr} />
               <span aria-hidden="true"></span>
             </label>
           </td>
@@ -6258,7 +6278,7 @@
               <textarea class="focus-field" data-focus-input data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id || ''}" placeholder="중점업무 입력"${isReadonly ? ' readonly title="타인의 중점업무는 수정할 수 없습니다"' : ''}>${escapeHtml(getWeeklyFocus(focusKey))}</textarea>
             </div>`;
           const dayCells = weekDates.map((date, dayIndex) => `
-            <div class="weekly-cell weekly-day-bg" data-dropzone data-date="${date}" data-day-index="${dayIndex}" data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id}" style="grid-column:${dayIndex + 3};grid-row:1 / span ${laneCount};" aria-label="${formatWeekHeaderDate(date)} 업무 추가"></div>`).join('');
+            <div class="weekly-cell weekly-day-bg${isReadonly ? ' is-readonly' : ''}"${isReadonly ? ' aria-disabled="true"' : ' data-dropzone'} data-date="${date}" data-day-index="${dayIndex}" data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id}" style="grid-column:${dayIndex + 3};grid-row:1 / span ${laneCount};" aria-label="${formatWeekHeaderDate(date)} 업무 추가"></div>`).join('');
           const miniTasks = g.tasks.map(task => {
             const lane = (task.isRoutine || task.routineId)
               ? (routineKeyLane.get(task.routineId || task.title) ?? 0)
@@ -6267,7 +6287,7 @@
           }).join('');
 
           return `
-            <div class="weekly-row weekly-timeline-row ${advertiserToneClass(advertiser)}${isSelf ? ' is-own-row' : ''}" data-weekly-row data-advertiser="${escapeHtml(advertiser)}"${g.id ? ` data-assignee="${g.id}"` : ''} style="--task-lanes:${laneCount};">
+            <div class="weekly-row weekly-timeline-row ${advertiserToneClass(advertiser)}${isSelf ? ' is-own-row' : ' is-readonly'}" data-weekly-row data-advertiser="${escapeHtml(advertiser)}"${g.id ? ` data-assignee="${g.id}"` : ''} style="--task-lanes:${laneCount};">
               ${assigneeCell}${focusCell}${dayCells}${miniTasks}
             </div>`;
         }).join('');
@@ -6290,6 +6310,7 @@
       const visibleStart = weekDates[0];
       const visibleEnd = weekDates[weekDates.length - 1];
       const routineEnabled = Boolean(task.isRoutine || task.routineId);
+      const mine = isMine(task);
       const taskEndDate = routineEnabled ? task.date : (task.deadline || task.endDate || task.date);
       if (task.date > visibleEnd || taskEndDate < visibleStart) return '';
 
@@ -6300,14 +6321,15 @@
       const totalDays = daysBetween(task.date, taskEndDate) + 1;
       const deadlineLabel = taskEndDate.slice(5).replace('-', '.');
       const rangeLabel = !routineEnabled && totalDays > 1 ? `<span class="weekly-task-duration" title="데드라인 ${formatWeekHeaderDate(taskEndDate)}">마감 ${deadlineLabel}</span>` : '';
-      const resizeStart = routineEnabled ? '' : `<button class="weekly-resize-handle is-start" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 요일 변경" title="드래그해서 시작 요일 변경"><span aria-hidden="true"></span></button>`;
-      const resizeEnd = routineEnabled ? '' : `<button class="weekly-resize-handle is-end" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 요일 변경" title="드래그해서 종료 요일 변경"><span aria-hidden="true"></span></button>`;
+      const resizeStart = routineEnabled || !mine ? '' : `<button class="weekly-resize-handle is-start" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 요일 변경" title="드래그해서 시작 요일 변경"><span aria-hidden="true"></span></button>`;
+      const resizeEnd = routineEnabled || !mine ? '' : `<button class="weekly-resize-handle is-end" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 요일 변경" title="드래그해서 종료 요일 변경"><span aria-hidden="true"></span></button>`;
+      const cardTitle = mine ? '클릭해서 업무 수정' : '다른 담당자의 업무는 수정할 수 없습니다';
 
       return `
-        <div class="mini-task timeline-task ${routineEnabled ? 'is-routine-task' : ''} ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''}" draggable="true" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="클릭해서 업무 수정">
+        <div class="mini-task timeline-task ${routineEnabled ? 'is-routine-task' : ''} ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="${cardTitle}">
           ${resizeStart}
           <label class="card-complete-check" title="완료 여부 변경">
-            <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} />
+            <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} ${mine ? '' : 'disabled'} />
             <span aria-hidden="true"></span>
           </label>
           <strong>${escapeHtml(task.title)}</strong>
@@ -6412,8 +6434,9 @@
 
     function renderTaskCard(task) {
       const mine = isMine(task);
+      const cardTitle = mine ? '클릭해서 업무 수정' : '다른 담당자의 업무는 수정할 수 없습니다';
       return `
-        <div class="task-card ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" title="클릭해서 업무 수정">
+        <div class="task-card ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" title="${cardTitle}">
           <label class="card-complete-check" title="완료 여부 변경">
             <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} ${mine ? '' : 'disabled'} />
             <span aria-hidden="true"></span>
@@ -6520,6 +6543,8 @@
     }
 
     function openAdvertiserPicker(taskId, anchorEl) {
+      const task = state.tasks.find(item => item.id === taskId);
+      if (!task || blockReadonlyTask(task)) return;
       state.advertiserPickerTaskId = taskId;
       renderAdvertiserPickerList();
       dom.advertiserPicker.hidden = false;
@@ -6617,6 +6642,7 @@
     function setTaskCompletion(id, completed) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
+      if (blockReadonlyTask(task)) return;
       const previousAdvertiser = task.advertiser;
       const previousVisible = state.view === 'daily' ? Boolean(findDailyTaskRow(id)) : false;
 
@@ -6651,6 +6677,7 @@
     function copyTask(id) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
+      if (blockReadonlyTask(task)) return;
       const copy = normalizeTask({
         ...task,
         id: uid('task'),
@@ -6688,6 +6715,7 @@
     function updateTask(id, patch) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
+      if (blockReadonlyTask(task)) return;
       const previousAdvertiser = task.advertiser;
       const nextPatch = { ...patch };
       if (nextPatch.date && !nextPatch.endDate && !nextPatch.deadline) {
@@ -6741,6 +6769,7 @@
     function setTaskEndDate(id, endDate) {
       const task = state.tasks.find(item => item.id === id);
       if (!task || !endDate) return;
+      if (blockReadonlyTask(task)) return;
       const nextEndDate = endDate < task.date ? task.date : endDate;
       if ((task.deadline || task.endDate || task.date) === nextEndDate) return;
       task.endDate = nextEndDate;
@@ -6755,6 +6784,7 @@
     function setTaskDateRange(id, startDate, endDate) {
       const task = state.tasks.find(item => item.id === id);
       if (!task || !startDate || !endDate) return;
+      if (blockReadonlyTask(task)) return;
       let nextStart = startDate;
       let nextEnd = endDate;
       if (nextEnd < nextStart) [nextStart, nextEnd] = [nextEnd, nextStart];
@@ -6773,7 +6803,7 @@
     function moveTask(id, patch) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
-      if (!isMine(task)) return;
+      if (blockReadonlyTask(task)) return;
       if (patch.status) {
         if (patch.status === 'done' && task.status !== 'done') task.previousStatus = ['todo', 'doing'].includes(task.status) ? task.status : 'todo';
         if (patch.status !== 'done') task.previousStatus = patch.status;
@@ -6798,7 +6828,8 @@
 
     function setTaskRoutineDay(id, value) {
       const task = state.tasks.find(item => item.id === id);
-      if (!task || !isMine(task)) return;
+      if (!task) return;
+      if (blockReadonlyTask(task)) return;
       if (!task.isRoutine && !task.routineId) return;
       const routineDay = normalizeRoutineDay(value);
       task.routineDay = routineDay;
@@ -6824,7 +6855,8 @@
 
     function reorderDailyTask(taskId, { advertiser, targetTaskId = null, insertAfter = false } = {}) {
       const task = state.tasks.find(item => item.id === taskId);
-      if (!task || !isMine(task)) return;
+      if (!task) return;
+      if (blockReadonlyTask(task)) return;
       const targetAdvertiser = normalizeAdvertiserName(advertiser || task.advertiser);
       if (!targetAdvertiser) return;
       const previousAdvertiser = task.advertiser;
@@ -7274,6 +7306,7 @@
     function toggleTaskRoutine(id, enabled) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
+      if (blockReadonlyTask(task)) return;
 
       if (enabled) {
         let routine = task.routineId ? state.routines.find(item => item.id === task.routineId) : null;
@@ -7321,6 +7354,7 @@
     function deleteTask(id, anchorElement = null) {
       const index = state.tasks.findIndex(task => task.id === id);
       if (index < 0) return;
+      if (blockReadonlyTask(state.tasks[index])) return;
       const anchor = state.view === 'daily' ? anchorElement?.closest?.('tr.task-row') || anchorElement : null;
       const anchorBounds = anchor?.getBoundingClientRect?.();
       const undoAnchor = anchorBounds ? {
@@ -7347,6 +7381,10 @@
     function deleteRoutine(id) {
       const index = state.routines.findIndex(routine => routine.id === id);
       if (index < 0) return;
+      if (!canEditAssignee(state.routines[index].assignee)) {
+        showReadonlyTaskToast();
+        return;
+      }
       const [removedRoutine] = state.routines.splice(index, 1);
       const removedTasks = state.tasks.filter(task => task.routineId === id);
       logHistory('ROUTINE_DELETE', `"${removedRoutine.title}" 루틴과 반복 업무 ${removedTasks.length}개를 삭제했습니다`);
@@ -7431,6 +7469,7 @@
     function openEditDialog(id) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
+      if (blockReadonlyTask(task)) return;
       state.taskDialogMode = 'edit';
       state.editingId = id;
       dom.dialogTitle.textContent = '업무 수정';
@@ -7761,6 +7800,7 @@
       const row = handle.closest('[data-weekly-row]');
       const task = state.tasks.find(item => item.id === handle.dataset.taskId);
       if (!taskEl || !row || !task) return;
+      if (blockReadonlyTask(task)) return;
       event.preventDefault();
       event.stopPropagation();
       const taskEnd = task.deadline || task.endDate || task.date;
@@ -7851,9 +7891,14 @@
     const wqa = { date: null, advertiser: null, assignee: null };
 
     function openWeeklyQuickAdd(date, advertiser, anchorEl) {
+      const assignee = anchorEl.closest('[data-weekly-row]')?.dataset.assignee || CURRENT_USER;
+      if (!canEditAssignee(assignee)) {
+        showReadonlyTaskToast();
+        return;
+      }
       wqa.date = date;
       wqa.advertiser = advertiser;
-      wqa.assignee = anchorEl.closest('[data-weekly-row]')?.dataset.assignee || CURRENT_USER;
+      wqa.assignee = assignee;
       dom.wqaLabel.textContent = `${formatDate(date, { month: 'numeric', day: 'numeric', weekday: 'short' })} · ${advertiser} · ${getUserDisplayName(wqa.assignee)}`;
       dom.wqaTitle.value = '';
       dom.weeklyQuickAdd.hidden = false;
@@ -7885,6 +7930,11 @@
     function submitWeeklyQuickAdd() {
       const title = dom.wqaTitle.value.trim();
       if (!title || !wqa.date || !wqa.advertiser) return;
+      if (!canEditAssignee(wqa.assignee || CURRENT_USER)) {
+        closeWeeklyQuickAdd();
+        showReadonlyTaskToast();
+        return;
+      }
       state.tasks.push(normalizeTask({
         title,
         advertiser: wqa.advertiser,
@@ -8228,6 +8278,7 @@
         }
         const zone = event.target.closest('[data-dropzone]');
         if (!zone) return;
+        if (zone.dataset.assignee && !canEditAssignee(zone.dataset.assignee)) return;
         event.preventDefault();
         zone.classList.add('is-over');
       });
@@ -8255,6 +8306,12 @@
         }
         const zone = event.target.closest('[data-dropzone]');
         if (!zone) return;
+        if (zone.dataset.assignee && !canEditAssignee(zone.dataset.assignee)) {
+          event.preventDefault();
+          zone.classList.remove('is-over');
+          showReadonlyTaskToast();
+          return;
+        }
         event.preventDefault();
         zone.classList.remove('is-over');
         moveTask(event.dataTransfer.getData('text/plain'), {
@@ -8267,6 +8324,7 @@
       document.addEventListener('input', event => {
         const target = event.target.closest('[data-focus-input]');
         if (!target) return;
+        if (target.readOnly || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
         resizeWeeklyFocusField(target);
         const focusKey = target.dataset.assignee
           ? `${target.dataset.advertiser}__${target.dataset.assignee}`
@@ -8277,6 +8335,7 @@
       document.addEventListener('change', event => {
         const target = event.target.closest('[data-focus-input]');
         if (!target) return;
+        if (target.readOnly || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
         const focusKey = target.dataset.assignee
           ? `${target.dataset.advertiser}__${target.dataset.assignee}`
           : target.dataset.advertiser;
