@@ -4210,7 +4210,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2420" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2421" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 22:34 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 23:13 KST</span>
     </div>
   </footer>
 
@@ -6192,11 +6192,20 @@
         dom.dailyAdvertiserGroupToggle.setAttribute('aria-pressed', String(grouped));
         dom.dailyAdvertiserGroupToggle.title = grouped ? '광고주 구분 섹션 숨기기' : '광고주 구분 섹션 보기';
       }
+      applyDailyRowZebra();
       renderSortIndicators();
     }
 
     function renderDailyStatusSummary(tasks = getDailyStatusSummaryTasks()) {
       if (dom.dailyDropbar) dom.dailyDropbar.innerHTML = '';
+    }
+
+    function applyDailyRowZebra() {
+      if (!dom.dailyList) return;
+      qsa('tr.task-row[data-daily-task-row]', dom.dailyList).forEach((row, index) => {
+        row.classList.toggle('daily-row-odd', index % 2 === 0);
+        row.classList.toggle('daily-row-even', index % 2 === 1);
+      });
     }
 
     function renderAdvertiserGroup(tasks, advertiser, groupIndex, sectionClass = '') {
@@ -6849,6 +6858,7 @@
         .join(' ');
       row.outerHTML = renderTaskRow(task, sectionClass);
       bindDragSources();
+      applyDailyRowZebra();
       renderDailyStatusSummary();
       renderStats();
       refreshDailyGroupHeader(task.advertiser);

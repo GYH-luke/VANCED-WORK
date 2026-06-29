@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-06-29 22:46 KST
+Last updated: 2026-06-29 23:13 KST
 
 ## Project Identity
 
@@ -63,7 +63,8 @@ When giving the user final results, include clickable links to the actual folder
 - Edit dialog includes a trash icon for deletion.
 - Daily advertiser sections have a plus button that opens an `Add task` dialog with advertiser prefilled.
 - Daily advertiser plus button should match the completion-check color and alignment.
-- Daily task row values are visually grouped by subtle backgrounds only: schedule values, advertiser/task values, and control values. Do not add divider lines for this grouping.
+- Daily task rows use subtle whole-row odd/even backgrounds for readability. Do not reintroduce separate schedule/work/control value background grouping in the Daily list.
+- Daily table category headers should stay centered to the actual value columns, including the task-title column.
 - Daily routine-day wording is `반복`, not `루틴요일`.
 - The app font should load NanumSquare from `나눔스퀘어/NanumSquareOTF_acL/R/B/EB.otf`.
 
