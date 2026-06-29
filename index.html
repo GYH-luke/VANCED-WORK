@@ -4144,7 +4144,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2412" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2413" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4420,7 +4420,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 09:44 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 10:11 KST</span>
     </div>
   </footer>
 
@@ -6323,10 +6323,10 @@
       const rangeLabel = !routineEnabled && totalDays > 1 ? `<span class="weekly-task-duration" title="데드라인 ${formatWeekHeaderDate(taskEndDate)}">마감 ${deadlineLabel}</span>` : '';
       const resizeStart = routineEnabled || !mine ? '' : `<button class="weekly-resize-handle is-start" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 요일 변경" title="드래그해서 시작 요일 변경"><span aria-hidden="true"></span></button>`;
       const resizeEnd = routineEnabled || !mine ? '' : `<button class="weekly-resize-handle is-end" type="button" draggable="false" data-weekly-resize-handle data-resize-edge="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 요일 변경" title="드래그해서 종료 요일 변경"><span aria-hidden="true"></span></button>`;
-      const cardTitle = mine ? '클릭해서 업무 수정' : '다른 담당자의 업무는 수정할 수 없습니다';
+      const taskTooltip = escapeHtml(task.title);
 
       return `
-        <div class="mini-task timeline-task ${routineEnabled ? 'is-routine-task' : ''} ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="${cardTitle}">
+        <div class="mini-task timeline-task ${routineEnabled ? 'is-routine-task' : ''} ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" data-visible-start-index="${startIndex}" data-visible-end-index="${endIndex}" data-task-start="${task.date}" data-task-end="${taskEndDate}" style="grid-column:${startIndex + 3} / ${endIndex + 4};grid-row:${laneIndex + 1};" title="${taskTooltip}">
           ${resizeStart}
           <label class="card-complete-check" title="완료 여부 변경">
             <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} ${mine ? '' : 'disabled'} />
@@ -6434,9 +6434,9 @@
 
     function renderTaskCard(task) {
       const mine = isMine(task);
-      const cardTitle = mine ? '클릭해서 업무 수정' : '다른 담당자의 업무는 수정할 수 없습니다';
+      const taskTooltip = escapeHtml(task.title);
       return `
-        <div class="task-card ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" title="${cardTitle}">
+        <div class="task-card ${task.status === 'done' ? 'done' : ''} ${task.priority === 'urgent' ? 'is-urgent' : ''} ${mine ? '' : 'is-readonly'}" draggable="${mine}" data-task-id="${task.id}" title="${taskTooltip}">
           <label class="card-complete-check" title="완료 여부 변경">
             <input type="checkbox" data-action="toggle-task-complete" data-task-id="${task.id}" ${task.status === 'done' ? 'checked' : ''} ${mine ? '' : 'disabled'} />
             <span aria-hidden="true"></span>
