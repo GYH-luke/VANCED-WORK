@@ -1711,16 +1711,16 @@ html[data-theme="dark"] .inline-time-separator {
     border-bottom-color:rgba(226,232,240,.56)!important;
   }
   .task-table tbody tr.task-row.daily-row-odd td {
-    background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(248,250,252,.58))!important;
+    background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(249,251,254,.90))!important;
   }
   .task-table tbody tr.task-row.daily-row-even td {
-    background:linear-gradient(180deg,rgba(247,250,255,.84),rgba(241,245,249,.60))!important;
+    background:linear-gradient(180deg,rgba(237,244,253,.96),rgba(230,239,250,.90))!important;
   }
   .task-table tbody tr.task-row:not(.daily-row-odd):not(.daily-row-even) td {
-    background:linear-gradient(180deg,rgba(255,255,255,.80),rgba(248,250,252,.58))!important;
+    background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(249,251,254,.88))!important;
   }
   .task-table tbody tr.task-row:hover td {
-    background:linear-gradient(180deg,rgba(239,246,255,.92),rgba(248,250,252,.72))!important;
+    background:linear-gradient(180deg,rgba(219,234,254,.98),rgba(232,242,255,.94))!important;
   }
   .task-table td.advertiser-picker-cell {
     min-width:0!important;
@@ -1764,13 +1764,13 @@ html[data-theme="dark"] .inline-time-separator {
     white-space:nowrap!important;
   }
   html[data-theme="dark"] .task-table tbody tr.task-row.daily-row-odd td {
-    background:linear-gradient(180deg,rgba(15,23,42,.58),rgba(30,41,59,.38))!important;
+    background:linear-gradient(180deg,rgba(15,23,42,.82),rgba(22,32,51,.76))!important;
   }
   html[data-theme="dark"] .task-table tbody tr.task-row.daily-row-even td {
-    background:linear-gradient(180deg,rgba(24,38,62,.62),rgba(15,23,42,.42))!important;
+    background:linear-gradient(180deg,rgba(31,47,73,.88),rgba(24,38,62,.82))!important;
   }
   html[data-theme="dark"] .task-table tbody tr.task-row:hover td {
-    background:linear-gradient(180deg,rgba(30,64,175,.34),rgba(30,41,59,.52))!important;
+    background:linear-gradient(180deg,rgba(39,73,145,.78),rgba(32,52,86,.86))!important;
   }
 }
 
