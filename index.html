@@ -4144,7 +4144,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2416" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2417" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4433,7 +4433,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 11:43 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 12:01 KST</span>
     </div>
   </footer>
 
@@ -6211,6 +6211,40 @@
       `;
     }
 
+    function getInlineTaskTimeParts(value) {
+      const normalized = normalizeTaskTime(value);
+      if (!normalized) return { start: '', end: '' };
+      const [start, end = start] = normalized.split('~');
+      return { start, end };
+    }
+
+    function renderInlineTaskTime(task) {
+      const { start, end } = getInlineTaskTimeParts(task.time);
+      const disabled = isMine(task) ? '' : 'disabled';
+      return `
+        <div class="inline-time-control" role="group" aria-label="${escapeHtml(task.title)} 시간 변경" data-task-id="${task.id}">
+          <input class="inline-time-part" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${start}" data-action="change-time-part" data-time-part="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 시간" autocomplete="off" ${disabled} />
+          <span class="inline-time-separator" aria-hidden="true">~</span>
+          <input class="inline-time-part" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${end}" data-action="change-time-part" data-time-part="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 시간" autocomplete="off" ${disabled} />
+        </div>
+      `;
+    }
+
+    function commitInlineTaskTime(timeControl) {
+      if (!timeControl) return;
+      const startInput = qs('[data-time-part="start"]', timeControl);
+      const endInput = qs('[data-time-part="end"]', timeControl);
+      if (!startInput || !endInput) return;
+      startInput.value = startInput.value ? normalizeTaskHour(startInput.value) : '';
+      endInput.value = endInput.value ? normalizeTaskHour(endInput.value) : '';
+      const nextTime = startInput.value || endInput.value ? `${startInput.value}~${endInput.value}` : '';
+      const taskId = timeControl.dataset.taskId;
+      const task = state.tasks.find(item => item.id === taskId);
+      if (task && normalizeTaskTime(task.time) !== normalizeTaskTime(nextTime)) {
+        updateTask(taskId, { time: nextTime }, { renderView: false });
+      }
+    }
+
     function renderTaskRow(task, sectionClass = '') {
       const completed = task.status === 'done';
       const deadline = task.deadline || task.endDate || task.date;
@@ -6235,7 +6269,7 @@
             ${renderInlineTaskDate(task, 'deadline', deadline, { overdue: deadline < toDateKey(new Date()) && !completed })}
           </td>
           <td class="time-cell" data-label="시간">
-            <input class="inline-time" type="text" inputmode="text" value="${formatTaskTime(task.time)}" data-action="change-time" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시간 변경" placeholder="ㅁ~ㅁ" ${readonlyAttr} />
+            ${renderInlineTaskTime(task)}
           </td>
           <td class="advertiser-picker-cell" data-label="광고주">
             <button class="advertiser-picker-trigger" type="button" data-action="open-advertiser-picker" data-task-id="${task.id}" aria-haspopup="dialog" aria-label="${escapeHtml(task.title)} 광고주 변경" ${readonlyAttr}>
@@ -6802,7 +6836,7 @@
       closeAdvertiserPicker();
     }
 
-    function updateTask(id, patch) {
+    function updateTask(id, patch, { renderView = true } = {}) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
       if (blockReadonlyTask(task)) return;
@@ -6852,7 +6886,7 @@
         logHistory('TASK_EDIT', `"${task.title}" 업무를 수정했습니다`);
       }
       save();
-      renderCurrentViewOnly({ refreshShell: false, refreshOptions: Boolean(nextPatch.advertiser), animate: false });
+      if (renderView) renderCurrentViewOnly({ refreshShell: false, refreshOptions: Boolean(nextPatch.advertiser), animate: false });
       showToast('업무를 수정했습니다.');
     }
 
@@ -8304,8 +8338,15 @@
           updateTask(pickerDateInput.dataset.taskId, { [pickerDateInput.dataset.dateField]: pickerDateInput.value });
           return;
         }
-        const timeInput = event.target.closest('[data-action="change-time"]');
-        if (timeInput) { updateTask(timeInput.dataset.taskId, { time: timeInput.value }); return; }
+        const timePartInput = event.target.closest('[data-action="change-time-part"]');
+        if (timePartInput) {
+          if (timePartInput.dataset.skipTimeCommit === 'true') {
+            delete timePartInput.dataset.skipTimeCommit;
+            return;
+          }
+          commitInlineTaskTime(timePartInput.closest('.inline-time-control'));
+          return;
+        }
         const prioritySelect = event.target.closest('[data-action="change-priority"]');
         if (prioritySelect) { updateTask(prioritySelect.dataset.taskId, { priority: prioritySelect.value }); return; }
         const routineDaySelect = event.target.closest('[data-action="change-routine-day"]');
@@ -8535,20 +8576,48 @@
       });
 
       document.addEventListener('focusin', event => {
-        const timeInput = event.target.closest('[data-action="change-time"], #editTime, #taskTime');
+        const timePartInput = event.target.closest('[data-action="change-time-part"]');
+        if (timePartInput) {
+          requestAnimationFrame(() => timePartInput.select?.());
+          return;
+        }
+        const timeInput = event.target.closest('#editTime, #taskTime');
         if (!timeInput) return;
         timeInput.value = normalizeTaskTime(timeInput.value);
         requestAnimationFrame(() => timeInput.select?.());
       });
 
       document.addEventListener('keydown', event => {
-        const timeInput = event.target.closest('[data-action="change-time"], #editTime, #taskTime');
+        const timePartInput = event.target.closest('[data-action="change-time-part"]');
+        if (timePartInput && event.key === 'Tab') {
+          const timeControl = timePartInput.closest('.inline-time-control');
+          const targetPart = timePartInput.dataset.timePart === 'start' && !event.shiftKey
+            ? qs('[data-time-part="end"]', timeControl)
+            : timePartInput.dataset.timePart === 'end' && event.shiftKey
+              ? qs('[data-time-part="start"]', timeControl)
+              : null;
+          if (targetPart) {
+            event.preventDefault();
+            timePartInput.dataset.skipTimeCommit = 'true';
+            targetPart.focus();
+            return;
+          }
+        }
+        const timeInput = timePartInput || event.target.closest('#editTime, #taskTime');
         if (!timeInput || event.key !== 'Enter') return;
         event.preventDefault();
         timeInput.blur();
       });
 
       document.addEventListener('focusout', event => {
+        const timePartInput = event.target.closest('[data-action="change-time-part"]');
+        if (timePartInput) {
+          const timeControl = timePartInput.closest('.inline-time-control');
+          requestAnimationFrame(() => {
+            if (!timeControl.contains(document.activeElement)) commitInlineTaskTime(timeControl);
+          });
+          return;
+        }
         const timeInput = event.target.closest('#editTime, #taskTime');
         if (!timeInput) return;
         timeInput.value = formatTaskTime(timeInput.value);

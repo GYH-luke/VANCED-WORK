@@ -1469,11 +1469,11 @@ html[data-theme="dark"] #weeklyBoard .timeline-task.is-readonly.is-urgent:not(.d
 .inline-date-control {
   position:relative;
   width:100%;
-  max-width:92px;
+  max-width:100px;
   min-width:0;
   height:32px;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 25px;
+  grid-template-columns:minmax(0,1fr) 27px;
   align-items:center;
   overflow:hidden;
   border:1px solid rgba(148,163,184,.16);
@@ -1491,14 +1491,14 @@ html[data-theme="dark"] #weeklyBoard .timeline-task.is-readonly.is-urgent:not(.d
   min-width:0!important;
   height:30px!important;
   min-height:30px!important;
-  padding:0 1px 0 7px!important;
+  padding:0 2px!important;
   border:0!important;
   border-radius:0!important;
   background:transparent!important;
   box-shadow:none!important;
   color:var(--ink-soft)!important;
   -webkit-text-fill-color:var(--ink-soft)!important;
-  font-size:11px!important;
+  font-size:10.8px!important;
   font-weight:800!important;
   line-height:30px!important;
   letter-spacing:-.025em!important;
@@ -1507,8 +1507,8 @@ html[data-theme="dark"] #weeklyBoard .timeline-task.is-readonly.is-urgent:not(.d
 }
 .inline-date-control .inline-date:focus { outline:none!important; box-shadow:none!important; }
 .inline-calendar-btn {
-  width:25px;
-  min-width:25px;
+  width:27px;
+  min-width:27px;
   height:30px;
   padding:0;
   display:grid;
@@ -1551,9 +1551,86 @@ html[data-theme="dark"] .inline-date-control .inline-date {
 html[data-theme="dark"] .inline-calendar-btn { color:#94a3b8; border-left-color:rgba(148,163,184,.14); }
 html[data-theme="dark"] .inline-calendar-btn:hover { color:#9eb6ff; background:rgba(96,165,250,.10); }
 
+.inline-time-control {
+  width:100%;
+  max-width:96px;
+  min-width:0;
+  height:32px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);
+  align-items:center;
+  overflow:hidden;
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.56),rgba(248,250,252,.34));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.58);
+}
+.inline-time-part {
+  width:100%!important;
+  min-width:0!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:0 2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:rgba(255,255,255,.24)!important;
+  box-shadow:none!important;
+  color:var(--ink-soft)!important;
+  -webkit-text-fill-color:var(--ink-soft)!important;
+  font-size:11px!important;
+  font-weight:820!important;
+  line-height:30px!important;
+  text-align:center!important;
+  font-variant-numeric:tabular-nums;
+}
+.inline-time-part:focus {
+  outline:none!important;
+  background:rgba(59,99,238,.10)!important;
+  box-shadow:inset 0 0 0 1px rgba(59,99,238,.34)!important;
+}
+.inline-time-separator {
+  height:30px;
+  display:grid;
+  place-items:center;
+  border-left:1px solid rgba(148,163,184,.14);
+  border-right:1px solid rgba(148,163,184,.14);
+  background:rgba(148,163,184,.07);
+  color:#64748b;
+  font-size:12px;
+  font-weight:900;
+  line-height:1;
+  pointer-events:none;
+  user-select:none;
+}
+html[data-theme="dark"] .inline-time-control {
+  border-color:rgba(148,163,184,.16);
+  background:linear-gradient(180deg,rgba(30,41,59,.54),rgba(15,23,42,.38));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+html[data-theme="dark"] .inline-time-part {
+  background:rgba(15,23,42,.12)!important;
+  color:#aab9ce!important;
+  -webkit-text-fill-color:#aab9ce!important;
+}
+html[data-theme="dark"] .inline-time-part:focus { background:rgba(96,165,250,.12)!important; }
+html[data-theme="dark"] .inline-time-separator {
+  color:#94a3b8;
+  border-color:rgba(148,163,184,.14);
+  background:rgba(148,163,184,.06);
+}
+
 @media (min-width:861px) {
   .task-table {
-    --daily-grid:44px 92px 92px 58px 144px minmax(384px,1fr) 72px 88px 52px 78px 56px 58px!important;
+    --daily-grid:44px 108px 108px 104px 132px minmax(310px,1fr) 72px 84px 52px 74px 56px 58px!important;
+  }
+  .task-table th:nth-child(2),
+  .task-table th:nth-child(3),
+  .task-table th:nth-child(4),
+  .task-table td:nth-child(2),
+  .task-table td:nth-child(3),
+  .task-table td:nth-child(4) {
+    padding-left:4px!important;
+    padding-right:4px!important;
   }
   .task-table th,
   .task-table th .sort-head,
@@ -1588,6 +1665,9 @@ html[data-theme="dark"] .inline-calendar-btn:hover { color:#9eb6ff; background:r
   .inline-date-control { width:92px; max-width:92px; height:28px; }
   .inline-date-control .inline-date { height:26px!important; min-height:26px!important; line-height:26px!important; font-size:10.5px!important; }
   .inline-calendar-btn { height:26px; }
+  .inline-time-control { width:92px; max-width:92px; height:28px; }
+  .inline-time-part { height:26px!important; min-height:26px!important; line-height:26px!important; font-size:10.5px!important; }
+  .inline-time-separator { height:26px; }
 }
 
 /* Shared assignee filter for Daily, Weekly and Advertiser views */
