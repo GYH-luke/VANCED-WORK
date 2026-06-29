@@ -18,6 +18,7 @@ Read these when needed:
 
 - `docs/OPERATIONS.md` for validation and GitHub workflow.
 - `docs/SUBAGENTS.md` for feedback/web/designer/release agent coordination.
+- `docs/QUALITY_GATE.md` before final delivery.
 - `docs/RELEASE_CHECKLIST.md` before final delivery.
 
 ## Project Map
@@ -28,6 +29,8 @@ Read these when needed:
 - Local preview: http://127.0.0.1:8765/index.html
 - Main app: `index.html`.
 - CSS override layer: `Daily_Work_v24.css`.
+- Font assets: `나눔스퀘어/*.otf`; use OTF files only.
+- Codex operating bundle: `.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, and `AGENTS.md`.
 - GitHub Pages deploy files: `index.html`, `Daily_Work_v24.css`.
 - Firebase project: `vanced-work`.
 - RTDB production paths: `workspace`, `history`, `members`.
@@ -43,6 +46,9 @@ Read these when needed:
 - Treat localStorage migration keys and Firebase workspace data as production-risk surfaces.
 - Do not store passwords, tokens, or secrets in memory or docs.
 - Put future requested project artifacts inside `SOURCE_WORKSPACE` unless the user explicitly asks for another location.
+- Do not report completion until the result has been checked against the user's actual problem. If verification fails, infer the likely root cause, patch again, and rerun verification.
+- Use only OTF files from `나눔스퀘어` when app fonts are needed; do not deploy TTF files unless explicitly requested.
+- Every GitHub upload must include the full Codex operating bundle, so work can continue from any PC with current context.
 
 ## Standard Workflow
 
@@ -50,10 +56,12 @@ Read these when needed:
 2. Apply the smallest safe patch.
 3. Validate inline JavaScript syntax in `index.html`.
 4. Verify local behavior when the change touches UI or interactions.
-5. Copy deploy files to the upload folder when app deploy files changed.
-6. Compare source/upload hashes or diffs.
-7. In the upload folder, fetch remote, commit or amend, and push when requested.
-8. Report changed files, folders, commit or push state, and links.
+5. Run the quality gate in `docs/QUALITY_GATE.md`; if it fails, diagnose, patch, and rerun the failed check.
+6. Copy deploy files to the upload folder when app deploy files changed.
+7. Copy the full Codex operating bundle to the upload folder for every GitHub upload.
+8. Update memory, agents, subagents, skills, and markdown docs when durable rules or product decisions changed.
+9. In the upload folder, fetch remote, commit or amend, and push when requested.
+10. Report changed files, folders, commit or push state, and links.
 
 ## Validation Command
 
@@ -87,6 +95,8 @@ git push origin main
 ```
 
 For documentation-only updates, add the changed documentation, agent, and skill files.
+
+For any GitHub upload, also add the full Codex operating bundle: `.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, and `AGENTS.md`.
 
 If `git push` says `Everything up-to-date`, GitHub already matches local.
 

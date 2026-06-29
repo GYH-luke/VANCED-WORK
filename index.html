@@ -14,11 +14,38 @@
     })();
   </script>
   <style>
-    @import url('https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/static/pretendard.css');
+    @font-face {
+      font-family: 'NanumSquare';
+      src: url('./나눔스퀘어/NanumSquareOTF_acL.otf') format('opentype');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'NanumSquare';
+      src: url('./나눔스퀘어/NanumSquareOTF_acR.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'NanumSquare';
+      src: url('./나눔스퀘어/NanumSquareOTF_acB.otf') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'NanumSquare';
+      src: url('./나눔스퀘어/NanumSquareOTF_acEB.otf') format('opentype');
+      font-weight: 800;
+      font-style: normal;
+      font-display: swap;
+    }
 
     :root {
       color-scheme: light;
-      --font: "Pretendard", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      --font: "NanumSquare", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 
       /* Apple-inspired product UI tokens */
       --bg: #f5f5f7;
@@ -278,7 +305,7 @@
       padding: 0 12px;
       background: var(--surface);
       color: var(--ink); outline: none;
-      font-size: 14px; font-weight: 560;
+      font-size: 14px; font-weight: 400;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.78);
       transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
     }
@@ -975,6 +1002,9 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
     }
 
+    .tab { font-weight: 500; }
+    .tab[aria-current="page"] { font-weight: 700; }
+
     .btn.primary {
       background: linear-gradient(180deg, #0a74e8, #075fc6);
       border-color: rgba(9,105,218,0.42);
@@ -1017,7 +1047,7 @@
     .range-nav-sep {
       color: #64748b;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 600;
       letter-spacing: -0.01em;
     }
     .range-nav input {
@@ -1026,8 +1056,8 @@
       height: 34px;
       padding: 0 10px;
       border-radius: var(--pill);
-      font-size: 12px;
-      font-weight: 760;
+      font-size: 13px;
+      font-weight: 600;
       box-shadow: none;
       background: rgba(255,255,255,0.66);
     }
@@ -1059,7 +1089,7 @@
       border: 1px solid rgba(9,105,218,0.18);
       color: var(--primary);
       font-size: 11px;
-      font-weight: 850;
+      font-weight: 700;
       letter-spacing: .02em;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.54);
     }
@@ -1085,7 +1115,7 @@
       backdrop-filter: blur(14px) saturate(1.12);
       -webkit-backdrop-filter: blur(14px) saturate(1.12);
     }
-    .status-chip strong { font-size: 12px; font-weight: 760; }
+    .status-chip strong { font-size: 12px; font-weight: 600; }
     .status-chip em {
       min-width: 19px;
       height: 19px;
@@ -1096,7 +1126,7 @@
       color: var(--ink);
       font-size: 11px;
       font-style: normal;
-      font-weight: 800;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
     .status-dot {
@@ -1148,9 +1178,10 @@
       background: rgba(248,250,252,0.58);
       color: #334155;
       font-size: 13px;
-      font-weight: 850;
+      font-weight: 600;
       text-transform: none;
-      letter-spacing: -0.015em;
+      letter-spacing: 0;
+      white-space: nowrap;
     }
     .task-table td {
       min-height: 72px;
@@ -1184,20 +1215,20 @@
       padding: 2px 0;
     }
     .task-title-wrap:hover .task-title { color: var(--primary); }
-    .task-title { font-size: 15.5px; font-weight: 830; letter-spacing: -0.025em; }
-    .task-memo { font-size: 12.5px; color: #64748b; }
+    .task-title { font-size: 15px; font-weight: 760; letter-spacing: -0.02em; }
+    .task-memo { font-size: 13px; color: #64748b; }
     .advertiser-select {
       font-size: 13px;
-      font-weight: 780;
+      font-weight: 600;
       color: var(--ink);
       background: rgba(255,255,255,0.66);
     }
     .advertiser-name,
     .weekly-static,
     .advertiser-head strong {
-      font-size: 16px;
-      font-weight: 850;
-      letter-spacing: -0.03em;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
     .weekly-static { color: var(--ink); }
 
@@ -1229,7 +1260,7 @@
     }
     .weekly-empty-text {
       color: var(--muted);
-      font-weight: 560;
+      font-weight: 500;
       font-size: 12px;
       display: inline-block;
       padding: 2px 0;
@@ -1256,7 +1287,7 @@
     }
     .lane.doing { background: rgba(9,105,218,0.055); }
     .lane.done { background: rgba(226,232,240,0.38); }
-    .lane-head { font-size: 13.5px; }
+    .lane-head { font-size: 13px; }
 
     .stat {
       min-height: 72px;
@@ -1276,9 +1307,10 @@
       padding: 0 4px;
       color: inherit;
       font-size: 13px;
-      font-weight: 850;
+      font-weight: 600;
       text-transform: none;
-      letter-spacing: -0.015em;
+      letter-spacing: 0;
+      white-space: nowrap;
     }
     .sort-head:hover { background: rgba(148,163,184,0.12); }
     .row-actions {
@@ -1338,14 +1370,14 @@
     .routine-section-head h2 {
       margin: 0;
       font-size: 17px;
-      font-weight: 850;
-      letter-spacing: -0.035em;
+      font-weight: 700;
+      letter-spacing: -0.025em;
     }
     .routine-section-head p {
       margin: 4px 0 0;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 500;
     }
     .routine-count {
       display: inline-grid;
@@ -1358,7 +1390,7 @@
       border: 1px solid rgba(9,105,218,0.16);
       color: var(--primary);
       font-size: 11px;
-      font-weight: 850;
+      font-weight: 700;
     }
     .routine-list {
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1428,14 +1460,14 @@
     }
     .routine-task-body strong {
       color: var(--ink);
-      font-size: 13.5px;
-      font-weight: 820;
+      font-size: 14px;
+      font-weight: 700;
     }
     .routine-task-body small {
       margin-top: 5px;
       color: var(--muted);
-      font-size: 11.5px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 500;
     }
     .routine-task.done {
       opacity: .62;
@@ -1484,7 +1516,7 @@
     .copy-head-label {
       color: #334155;
       font-size: 12px;
-      font-weight: 850;
+      font-weight: 600;
     }
     .task-row.is-complete td:not(:last-child) {
       opacity: .58;
@@ -1683,7 +1715,7 @@
     .advertiser-picker-head strong,
     .advertiser-picker-head span { display: block; }
     .advertiser-picker-head strong { font-size: 14px; font-weight: 900; }
-    .advertiser-picker-head span { margin-top: 4px; color: var(--muted); font-size: 10.5px; font-weight: 650; line-height: 1.4; }
+    .advertiser-picker-head span { margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.4; }
     .advertiser-add-option {
       width: 100%;
       min-height: 38px;
@@ -1691,8 +1723,8 @@
       border-radius: 12px;
       background: rgba(9,105,218,0.08);
       color: var(--primary);
-      font-size: 12.5px;
-      font-weight: 850;
+      font-size: 13px;
+      font-weight: 700;
     }
     .advertiser-picker-list {
       display: grid;
@@ -1715,8 +1747,8 @@
       background: rgba(255,255,255,0.56);
       color: var(--ink);
       text-align: left;
-      font-size: 12.5px;
-      font-weight: 800;
+      font-size: 13px;
+      font-weight: 700;
       cursor: grab;
       user-select: none;
     }
@@ -2582,10 +2614,10 @@
       padding: 0 7px 0 10px;
       color: var(--ink) !important;
       -webkit-text-fill-color: var(--ink);
-      font-size: 12.5px;
-      font-weight: 800;
+      font-size: 14px;
+      font-weight: 700;
       line-height: 36px;
-      letter-spacing: -0.025em;
+      letter-spacing: -0.01em;
       font-variant-numeric: tabular-nums;
       background-color: rgba(255,255,255,0.64);
       overflow: visible;
@@ -2885,20 +2917,31 @@
       width: 100%;
       text-align: center;
     }
-    .advertiser-picker-cell {
+    .task-table td.advertiser-picker-cell,
+    .task-table th:nth-child(5) {
       justify-content: center !important;
+      padding-left: 44px !important;
+      overflow: visible !important;
     }
     .advertiser-picker-trigger {
       justify-content: center;
       text-align: center;
       gap: 7px;
-      max-width: 170px;
+      width: auto;
+      min-width: max-content;
+      max-width: none;
+      height: 36px;
+      min-height: 36px;
       margin: 0 auto;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      overflow: hidden;
     }
     .advertiser-picker-trigger span {
-      flex: 0 1 auto;
+      flex: 0 0 auto;
       text-align: center;
-      min-width: 0;
+      white-space: nowrap;
+      overflow: visible;
     }
     .copy-cell,
     .copy-column-head,
@@ -3088,8 +3131,7 @@
     .inline-date,
     .inline-time,
     .inline-select,
-    .status-select,
-    .advertiser-picker-trigger {
+    .status-select {
       width: 100%;
       min-height: 36px;
       height: 36px;
@@ -3100,14 +3142,25 @@
       text-align-last: center;
       font-variant-numeric: tabular-nums;
     }
+    .advertiser-picker-trigger {
+      width: auto;
+      min-width: max-content;
+      min-height: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-shrink: 0;
+    }
     .inline-time {
       border-radius: var(--pill);
       border: 1px solid rgba(148,163,184,0.18);
       padding: 0 10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.68), rgba(248,250,252,0.46));
       color: var(--ink-soft);
-      font-size: 13px;
-      font-weight: 820;
+      font-size: 14px;
+      font-weight: 700;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
     }
     .time-cell {
@@ -3140,7 +3193,9 @@
       justify-content: center !important;
     }
     .advertiser-picker-trigger {
-      max-width: 176px;
+      max-width: none;
+      min-width: max-content;
+      flex-shrink: 0;
     }
 
     .task-row.is-urgent:not(.is-complete) td:nth-child(n+2):nth-child(-n+8),
@@ -3433,23 +3488,23 @@
     }
     .task-table .inline-date,
     .inline-time {
-      max-width: 118px !important;
+      max-width: 148px !important;
       min-width: 0 !important;
-      height: 32px !important;
-      min-height: 32px !important;
-      font-size: 11.5px !important;
-      font-weight: 760 !important;
-      letter-spacing: -0.02em !important;
-      opacity: .84;
+      height: 36px !important;
+      min-height: 36px !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.01em !important;
+      opacity: 1;
       background: linear-gradient(180deg, rgba(255,255,255,0.52), rgba(248,250,252,0.32)) !important;
       border-color: rgba(148,163,184,0.14) !important;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.55) !important;
     }
     .inline-time {
-      max-width: 62px !important;
-      padding-left: 6px !important;
-      padding-right: 6px !important;
-      color: #64748b !important;
+      max-width: 100px !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+      color: var(--ink-soft) !important;
     }
     .task-table .inline-date::-webkit-calendar-picker-indicator {
       width: 13px !important;
@@ -3458,9 +3513,12 @@
       opacity: .58 !important;
     }
     .advertiser-picker-trigger {
-      max-width: 156px !important;
-      font-size: 12.5px !important;
-      font-weight: 820 !important;
+      width: auto !important;
+      min-width: max-content !important;
+      max-width: none !important;
+      flex-shrink: 0 !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
     }
     .priority-select,
     .status-select {
@@ -4142,9 +4200,17 @@
     [data-theme="dark"] .afg-btn { color: rgba(255,255,255,0.55); }
     [data-theme="dark"] .afg-btn:hover { color: rgba(255,255,255,0.9); }
 
+    /* V23 — 헤더 폰트 크기 확대 + 컬러 통일 */
+    .task-table th,
+    .task-table th .sort-head {
+      font-size: 14px !important;
+      color: #334155 !important;
+      white-space: nowrap !important;
+    }
+
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2418" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2420" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4294,7 +4360,7 @@
               </div>
               <label class="check"><input id="taskRoutine" type="checkbox" />루틴</label>
               <div class="field routine-day-field">
-                <label for="taskRoutineDay">루틴요일</label>
+                <label for="taskRoutineDay">반복</label>
                 <select id="taskRoutineDay" disabled>
                   <option value="daily">매일</option>
                   <option value="mon">매주 월</option>
@@ -4357,15 +4423,15 @@
             <thead>
               <tr>
                 <th class="copy-column-head"><span class="copy-head-label">복사</span></th>
-                <th><button class="sort-head" type="button" data-sort-field="date">날짜 <span data-sort-indicator="date"></span></button></th>
-                <th><button class="sort-head" type="button" data-sort-field="deadline">데드라인 <span data-sort-indicator="deadline"></span></button></th>
+                <th><button class="sort-head" type="button" data-sort-field="date">시작 <span data-sort-indicator="date"></span></button></th>
+                <th><button class="sort-head" type="button" data-sort-field="deadline">마감 <span data-sort-indicator="deadline"></span></button></th>
                 <th><button class="sort-head" type="button" data-sort-field="time">시간 <span data-sort-indicator="time"></span></button></th>
                 <th><button class="sort-head" type="button" data-sort-field="advertiser">광고주 <span data-sort-indicator="advertiser"></span></button></th>
                 <th><button class="sort-head" type="button" data-sort-field="title">업무 <span data-sort-indicator="title"></span></button></th>
                 <th><button class="sort-head" type="button" data-sort-field="priority">우선 <span data-sort-indicator="priority"></span></button></th>
                 <th><button class="sort-head" type="button" data-sort-field="status">상태 <span data-sort-indicator="status"></span></button></th>
                 <th class="routine-column-head">루틴</th>
-                <th class="routine-day-column-head">루틴요일</th>
+                <th class="routine-day-column-head">반복</th>
                 <th class="complete-column-head">완료</th>
                 <th>관리</th>
               </tr>
@@ -4433,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 18:20 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 22:34 KST</span>
     </div>
   </footer>
 
@@ -4480,7 +4546,7 @@
             </select>
           </div>
           <div class="field">
-            <label for="editRoutineDay">루틴요일</label>
+            <label for="editRoutineDay">반복</label>
             <select id="editRoutineDay">
               <option value="daily">매일</option>
               <option value="mon">매주 월</option>
@@ -6332,8 +6398,8 @@
               <span aria-hidden="true"></span>
             </label>
           </td>
-          <td class="routine-day-cell" data-label="루틴요일">
-            <select class="inline-select routine-day-select" data-action="change-routine-day" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 루틴요일 변경" ${routineEnabled && mine ? '' : 'disabled'}>
+          <td class="routine-day-cell" data-label="반복">
+            <select class="inline-select routine-day-select" data-action="change-routine-day" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 반복 요일 변경" ${routineEnabled && mine ? '' : 'disabled'}>
               ${renderRoutineDayOptions(routineDay)}
             </select>
           </td>
@@ -6997,10 +7063,10 @@
           if (item.routineId === task.routineId) item.routineDay = routineDay;
         });
       }
-      logHistory('ROUTINE_DAY', `"${task.title}" 루틴요일을 ${ROUTINE_DAYS.find(item => item.id === routineDay)?.label || '매일'}로 변경했습니다`);
+      logHistory('ROUTINE_DAY', `"${task.title}" 반복을 ${ROUTINE_DAYS.find(item => item.id === routineDay)?.label || '매일'}로 변경했습니다`);
       save();
       renderCurrentViewOnly({ refreshShell: false, refreshOptions: false, animate: false });
-      showToast('루틴요일을 변경했습니다.');
+      showToast('반복을 변경했습니다.');
     }
 
     function getDailyManualGroupTasks(assignee, advertiser) {
@@ -8344,7 +8410,10 @@
         if (action === 'close-advertiser-dialog') closeAdvertiserDialog();
         if (action === 'close-advertiser-picker') closeAdvertiserPicker();
         if (action === 'open-advertiser-dialog') openAdvertiserDialog(null);
-        if (action === 'open-advertiser-picker') openAdvertiserPicker(target.dataset.taskId, target);
+        if (action === 'open-advertiser-picker') {
+          if (!dom.advertiserPicker.hidden && state.advertiserPickerTaskId === target.dataset.taskId) closeAdvertiserPicker();
+          else openAdvertiserPicker(target.dataset.taskId, target);
+        }
         if (action === 'add-advertiser-from-picker') {
           state.pendingAdvertiserTaskId = state.advertiserPickerTaskId;
           openAdvertiserDialog(state.advertiserPickerTaskId);
@@ -8901,6 +8970,7 @@
       dom.dailyAiCopyBtn.addEventListener('click', copyDailyAiText);
 
       dom.taskDialog.addEventListener('cancel', event => { event.preventDefault(); closeEditDialog(); });
+      dom.taskDialog.addEventListener('click', e => { if (e.target === dom.taskDialog) closeEditDialog(); });
       dom.advertiserDialog.addEventListener('cancel', event => { event.preventDefault(); closeAdvertiserDialog(); });
       dom.confirmDialog.addEventListener('cancel', event => { event.preventDefault(); closeConfirm(); });
       dom.dailyAiDialog.addEventListener('cancel', event => { event.preventDefault(); closeDailyAiDialog(); });

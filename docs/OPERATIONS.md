@@ -6,15 +6,19 @@
 2. Preview at http://127.0.0.1:8765/index.html.
 3. Push through `UPLOAD_WORKSPACE`, the child folder named `_github_upload_VANCED-WORK`.
 4. Put future project artifacts inside `SOURCE_WORKSPACE` unless the user explicitly asks otherwise.
+5. Every GitHub upload must include the full Codex operating bundle, not only app deploy files.
 
 ## Before Editing
 
 - Confirm whether the change is visual, behavior, Firebase, or GitHub-related.
 - Prefer `Daily_Work_v24.css` for styling.
 - Use `index.html` for behavior, markup, dialogs, footer timestamp, and state.
+- Use OTF files from `나눔스퀘어` for fonts. Do not add TTF font files to GitHub Pages deployment unless explicitly requested.
 - Read `FIREBASE_SETUP.md` and `database.rules.json` before Firebase, history, account, import, export, or migration changes.
 
 ## After Editing App Files
+
+First apply the quality gate in `docs/QUALITY_GATE.md`: verify the actual user-facing behavior, and if it fails, infer the likely root cause, patch again, and repeat verification.
 
 Run JavaScript syntax validation from `SOURCE_WORKSPACE`:
 
@@ -35,6 +39,8 @@ console.log(`JavaScript syntax OK (${blocks.length} inline blocks)`);
 
 If CSS changed, confirm the `Daily_Work_v24.css?v=...` cache query in `index.html` was bumped.
 
+If behavior changed, check the local preview. For interaction changes such as drag/drop, dialog behavior, filters, or tab navigation, verify the interaction itself rather than only checking code.
+
 ## Sync To Git Upload Folder
 
 Copy deploy files from `SOURCE_WORKSPACE` to `UPLOAD_WORKSPACE`:
@@ -43,6 +49,15 @@ Copy deploy files from `SOURCE_WORKSPACE` to `UPLOAD_WORKSPACE`:
 Copy-Item -LiteralPath .\index.html -Destination .\_github_upload_VANCED-WORK\index.html -Force
 Copy-Item -LiteralPath .\Daily_Work_v24.css -Destination .\_github_upload_VANCED-WORK\Daily_Work_v24.css -Force
 ```
+
+Also sync the Codex operating bundle every time:
+
+- `.codex/`
+- `agents/`
+- `docs/`
+- `MEMORY.md`
+- `PROJECT_MEMORY.md`
+- `AGENTS.md`
 
 Then run Git commands from `UPLOAD_WORKSPACE`:
 
@@ -55,6 +70,10 @@ git push origin main
 ```
 
 For documentation-only updates, add the changed documentation, agent, and skill files.
+
+For app updates, still add the Codex operating bundle too, so other PCs get current memory, agents, skills, and markdown docs.
+
+When durable rules, product decisions, or working habits change, update `PROJECT_MEMORY.md`, `AGENTS.md`, relevant `agents/*.md`, `docs/SUBAGENTS.md`, `docs/RELEASE_CHECKLIST.md`, and the project skill as needed.
 
 ## Common Git Errors
 
@@ -72,3 +91,4 @@ Always include:
 - local preview link
 - GitHub repo link
 - verification or reason verification was skipped
+- whether the quality gate passed or what blocker remains

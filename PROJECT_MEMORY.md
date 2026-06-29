@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-06-29 08:06 KST
+Last updated: 2026-06-29 22:46 KST
 
 ## Project Identity
 
@@ -29,6 +29,7 @@ When giving the user final results, include clickable links to the actual folder
 
 - `index.html`: app shell, JavaScript logic, dialogs, Firebase, state, and base inline CSS.
 - `Daily_Work_v24.css`: external visual override layer. Prefer this for design-only changes.
+- `나눔스퀘어/`: local NanumSquare font folder. Use OTF files only for app fonts; do not add TTF font files to deployment unless explicitly requested.
 - `database.rules.json`: Firebase Realtime Database rules.
 - `firebase.json` and `.firebaserc`: Firebase project config.
 - `FIREBASE_SETUP.md`: Firebase and account setup notes.
@@ -36,8 +37,10 @@ When giving the user final results, include clickable links to the actual folder
 - `MEMORY.md` and `.codex/MEMORY.md`: memory entry points.
 - `docs/OPERATIONS.md`: release and validation workflow.
 - `docs/SUBAGENTS.md`: multi-agent workflow.
+- `docs/QUALITY_GATE.md`: mandatory self-audit and retry loop before final delivery.
 - `docs/RELEASE_CHECKLIST.md`: short final QA checklist.
 - `.codex/skills/vanced-work-ops`: project skill.
+- Codex operating bundle for GitHub sync: `.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, and `AGENTS.md`.
 
 ## Current Product Decisions
 
@@ -60,16 +63,22 @@ When giving the user final results, include clickable links to the actual folder
 - Edit dialog includes a trash icon for deletion.
 - Daily advertiser sections have a plus button that opens an `Add task` dialog with advertiser prefilled.
 - Daily advertiser plus button should match the completion-check color and alignment.
+- Daily task row values are visually grouped by subtle backgrounds only: schedule values, advertiser/task values, and control values. Do not add divider lines for this grouping.
+- Daily routine-day wording is `반복`, not `루틴요일`.
+- The app font should load NanumSquare from `나눔스퀘어/NanumSquareOTF_acL/R/B/EB.otf`.
 
 ## User Preferences
 
 - Always include changed file links and folder links in final responses.
 - Always include local preview and GitHub repo links after completed app work.
 - Always create requested files, docs, helper folders, and working artifacts inside the existing Vanced Work source folder.
+- Always upload the full Codex operating bundle to GitHub with app releases, so other PCs have current memory, agents, skills, and markdown docs.
 - For every user-requested app change, update footer timestamp in `index.html` using current KST.
 - If CSS changes, bump the `Daily_Work_v24.css?v=...` cache query in `index.html`.
+- Use the local `나눔스퀘어` folder for fonts and select OTF files only.
 - Keep final explanations concise and practical.
 - User is non-developer; explain operational choices plainly when asked.
+- After every requested change, self-check whether the fix fully solves the reported problem. If not, infer the exact likely cause, patch again, and rerun verification before saying the work is complete.
 
 ## Firebase And Data Model
 
@@ -116,10 +125,12 @@ Rules:
 4. Update footer timestamp when app files changed by user request.
 5. Validate inline JavaScript syntax in `index.html`.
 6. Verify UI behavior locally when the change touches layout or interaction.
-7. Copy deploy files to `UPLOAD_WORKSPACE`.
-8. Compare source and upload hashes when deploy files changed.
-9. Commit and push from `UPLOAD_WORKSPACE` when requested.
-10. Final response includes changed files, folders, local URL, GitHub URL, and verification result.
+7. Run the `docs/QUALITY_GATE.md` self-audit. If anything fails, diagnose the likely root cause, patch again, and repeat validation.
+8. Copy deploy files to `UPLOAD_WORKSPACE`.
+9. Copy the full Codex operating bundle to `UPLOAD_WORKSPACE` for every GitHub upload, even when the user only changed app files.
+10. Commit and push from `UPLOAD_WORKSPACE` when requested.
+11. Update memory, agent, subagent, skill, and markdown documentation when rules, workflows, or product decisions changed.
+12. Final response includes changed files, folders, local URL, GitHub URL, and verification result.
 
 ## GitHub Workflow
 
@@ -134,6 +145,8 @@ git push origin main
 ```
 
 For documentation-only releases, add the changed docs and skill files instead of app deploy files.
+
+For any GitHub upload, also stage the full Codex operating bundle: `.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, and `AGENTS.md`. This keeps company PCs and personal PCs on the same working context.
 
 If `git push` says `Everything up-to-date`, GitHub already matches local.
 

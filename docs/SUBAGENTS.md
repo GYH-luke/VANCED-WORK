@@ -60,6 +60,14 @@ Use for:
 2. Web development agent proposes or applies scoped fixes.
 3. Feedback agent reviews the revised result.
 4. Web development agent finalizes and verifies.
-5. Release manager checks deploy readiness when GitHub or Firebase is involved.
+5. If verification fails, the web development agent states the likely root cause, patches again, and reruns the failed check.
+6. Release manager checks deploy readiness when GitHub or Firebase is involved.
 
 Keep each round short and tied to the concrete user request.
+
+## Quality Gate Responsibilities
+
+- Feedback agent: decide whether the original user problem is actually solved, not just whether a patch exists.
+- Web development agent: rerun failed checks after each fix and explain the root cause of any failed attempt.
+- Designer agent: verify visual consistency and alignment in the affected view.
+- Release manager agent: confirm source/upload sync, full Codex operating bundle sync, Git state, commit/push, links, and documentation updates.
