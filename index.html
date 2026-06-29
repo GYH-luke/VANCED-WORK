@@ -4144,7 +4144,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2413" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2416" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4271,7 +4271,7 @@
               </div>
               <div class="field">
                 <label for="taskTime">시간</label>
-                <input id="taskTime" type="text" inputmode="numeric" placeholder="N → ~N시" autocomplete="off" />
+                <input id="taskTime" type="text" inputmode="text" placeholder="ㅁ~ㅁ" autocomplete="off" />
               </div>
               <div class="field">
                 <label for="taskStatus">상태</label>
@@ -4320,6 +4320,7 @@
         <div class="content-head daily-head">
           <div class="daily-title-row">
             <h2>오늘 업무</h2>
+            <button class="btn daily-advertiser-group-toggle" id="dailyAdvertiserGroupToggle" type="button" data-action="toggle-daily-advertiser-groups" aria-pressed="false">광고주 구분</button>
           </div>
         </div>
         <div class="daily-filter-bar">
@@ -4331,11 +4332,11 @@
             <option value="done">완료</option>
           </select>
           <div class="status-dropbar" id="dailyDropbar" aria-label="상태별 업무 개수" hidden></div>
-          <div class="assignee-filter-group" id="assigneeFilterGroup">
+          <div class="assignee-filter-group" id="assigneeFilterGroup" data-assignee-filter-group>
             <button type="button" class="afg-btn active" id="afgAll" data-action="set-assignee-mode" data-mode="all">담당자 전체</button>
             <button type="button" class="afg-btn" id="afgMe" data-action="set-assignee-mode" data-mode="me">나</button>
             <button type="button" class="afg-btn" id="afgSearch" data-action="set-assignee-mode" data-mode="search">검색</button>
-            <input type="text" id="assigneeSearchInput" class="afg-search" placeholder="이름 검색..." hidden />
+            <input type="text" id="assigneeSearchInput" class="afg-search" data-assignee-search placeholder="이름 검색..." hidden />
           </div>
           <span class="fbar-sp"></span>
           <div class="inline-stats" id="stats" aria-label="업무 요약"></div>
@@ -4387,6 +4388,12 @@
             <button type="button" class="filter-pill-select assignee-ms-trigger weekly-adv-select-btn" id="weeklyAdvFilterTrigger" data-action="toggle-weekly-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 선택</button>
             <div class="assignee-ms-panel" id="weeklyAdvFilterPanel" hidden></div>
           </div>
+          <div class="assignee-filter-group view-assignee-filter" data-assignee-filter-group>
+            <button type="button" class="afg-btn active" data-action="set-assignee-mode" data-mode="all">담당자 전체</button>
+            <button type="button" class="afg-btn" data-action="set-assignee-mode" data-mode="me">나</button>
+            <button type="button" class="afg-btn" data-action="set-assignee-mode" data-mode="search">검색</button>
+            <input type="text" class="afg-search" data-assignee-search placeholder="이름 검색..." hidden />
+          </div>
         </div>
         <div class="weekly-scroll" style="margin-top:12px;">
           <div class="weekly-table" id="weeklyBoard"></div>
@@ -4409,6 +4416,12 @@
             <button type="button" class="filter-pill-select assignee-ms-trigger" id="advFilterTrigger" data-action="toggle-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 전체</button>
             <div class="assignee-ms-panel" id="advFilterPanel" hidden></div>
           </div>
+          <div class="assignee-filter-group view-assignee-filter" data-assignee-filter-group>
+            <button type="button" class="afg-btn active" data-action="set-assignee-mode" data-mode="all">담당자 전체</button>
+            <button type="button" class="afg-btn" data-action="set-assignee-mode" data-mode="me">나</button>
+            <button type="button" class="afg-btn" data-action="set-assignee-mode" data-mode="search">검색</button>
+            <input type="text" class="afg-search" data-assignee-search placeholder="이름 검색..." hidden />
+          </div>
         </div>
         <div class="advertiser-grid" id="advertiserBoard" style="margin-top:12px;"></div>
       </section>
@@ -4420,7 +4433,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 10:11 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 11:43 KST</span>
     </div>
   </footer>
 
@@ -4449,7 +4462,7 @@
           </div>
           <div class="field">
             <label for="editTime">시간</label>
-            <input id="editTime" type="text" inputmode="numeric" placeholder="N → ~N시" />
+            <input id="editTime" type="text" inputmode="text" placeholder="ㅁ~ㅁ" />
           </div>
           <div class="field">
             <label for="editPriority">우선순위</label>
@@ -4628,16 +4641,23 @@
       return true;
     }
     function syncAssigneeFilterUI() {
-      if (!dom.afgAll) return;
       const mode = state.filters.assignee;
-      dom.afgAll.classList.toggle('active', mode === 'all');
-      dom.afgMe.classList.toggle('active', mode === 'me');
-      dom.afgSearch.classList.toggle('active', mode === 'search');
       const me = USERS.find(u => u.id === CURRENT_USER);
-      if (dom.afgMe) dom.afgMe.textContent = me ? `나 (${me.korean})` : '나';
-      if (dom.assigneeSearchInput) {
-        dom.assigneeSearchInput.hidden = mode !== 'search';
-        if (mode === 'search') dom.assigneeSearchInput.focus();
+      qsa('[data-assignee-filter-group]').forEach(group => {
+        qsa('[data-action="set-assignee-mode"]', group).forEach(button => {
+          button.classList.toggle('active', button.dataset.mode === mode);
+          button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+          if (button.dataset.mode === 'me') button.textContent = me ? `나 (${me.korean})` : '나';
+        });
+        const searchInput = qs('[data-assignee-search]', group);
+        if (searchInput) {
+          searchInput.hidden = mode !== 'search';
+          searchInput.value = state.filters.assigneeQuery;
+        }
+      });
+      if (mode === 'search') {
+        const activeSearchInput = qs(`#${state.view}View [data-assignee-search]`);
+        if (activeSearchInput && document.activeElement !== activeSearchInput) activeSearchInput.focus();
       }
       if (dom.myTasksBtn) {
         const showingMyTasks = state.view === 'daily' && mode === 'me';
@@ -5012,6 +5032,7 @@
       weeklyAdvertiserFilter: [],
       sortMode: 'smart',
       tableSort: { field: 'manual', direction: 'asc' },
+      dailyAdvertiserGrouping: false,
       editingId: null,
       taskDialogMode: 'edit',
       lastUndo: null,
@@ -5035,7 +5056,7 @@
         'importInput', 'main', 'viewTitle', 'viewSubtitle', 'periodDateNav', 'periodBadge', 'periodPresetMenu', 'selectedStartDateInput', 'selectedEndDateInput', 'themeToggle', 'themeIcon',
         'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine', 'taskRoutineDay',
         'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone',
-        'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'weeklyBoard',
+        'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'dailyAdvertiserGroupToggle', 'weeklyBoard',
         'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
         'taskDialog', 'dialogTitle', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editRoutineDay', 'editDeleteBtn', 'editSubmitBtn',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
@@ -5100,6 +5121,28 @@
 
     function formatDate(dateKey, options = { month: 'numeric', day: 'numeric', weekday: 'short' }) {
       return new Intl.DateTimeFormat('ko-KR', options).format(new Date(`${dateKey}T00:00:00`));
+    }
+
+    function formatCompactTaskDate(dateKey) {
+      const match = String(dateKey || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return match ? `${match[1].slice(-2)}.${match[2]}.${match[3]}` : '';
+    }
+
+    function parseCompactTaskDate(value) {
+      const compact = String(value || '').trim().replace(/\s+/g, '');
+      let match = compact.match(/^(\d{2}|\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})$/);
+      if (!match) {
+        const digits = compact.replace(/\D/g, '');
+        if (digits.length === 6) match = ['', digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 6)];
+        if (digits.length === 8) match = ['', digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)];
+      }
+      if (!match) return '';
+      const year = Number(match[1].length === 2 ? `20${match[1]}` : match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
+      return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 
     function formatWeekHeaderDate(dateKey) {
@@ -5252,18 +5295,36 @@
       return 'normal';
     }
 
+    function normalizeTaskHour(value) {
+      const hour = Math.max(0, Math.min(23, Number(value)));
+      return Number.isFinite(hour) ? String(hour) : '';
+    }
+
     function normalizeTaskTime(value) {
       const raw = String(value ?? '').trim();
       if (!raw) return '';
-      const digits = raw.replace(/[^0-9]/g, '').slice(0, 2);
-      if (!digits) return '';
-      const hour = Math.max(0, Math.min(23, Number(digits)));
-      return String(hour);
+      const numbers = raw
+        .replace(/[시\s]/g, '')
+        .replace(/[~～\-–—]/g, '~')
+        .match(/\d{1,2}/g);
+      if (!numbers?.length) return '';
+      const start = normalizeTaskHour(numbers[0]);
+      const end = normalizeTaskHour(numbers[1] || numbers[0]);
+      return start ? `${start}~${end || start}` : '';
+    }
+
+    function getTaskStartHour(value) {
+      const normalized = normalizeTaskTime(value);
+      if (!normalized) return 99;
+      const start = Number(normalized.split('~')[0]);
+      return Number.isFinite(start) ? start : 99;
     }
 
     function formatTaskTime(value) {
-      const hour = normalizeTaskTime(value);
-      return hour ? `~${hour}시` : '~N시';
+      const normalized = normalizeTaskTime(value);
+      if (!normalized) return '';
+      const [start, end = start] = normalized.split('~');
+      return `${start}~${end}시`;
     }
 
     function normalizeRoutineDay(value) {
@@ -5688,11 +5749,7 @@
         if (state.filters.status !== 'all' && task.status !== state.filters.status) return false;
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
         if (state.filters.type !== 'all' && task.type !== state.filters.type) return false;
-        if (state.filters.assignee === 'me' && task.assignee !== CURRENT_USER) return false;
-        if (state.filters.assignee === 'search' && state.filters.assigneeQuery) {
-          const q = state.filters.assigneeQuery.toLowerCase();
-          if (!getUserDisplayName(task.assignee).toLowerCase().includes(q)) return false;
-        }
+        if (!matchesAssigneeFilter(task)) return false;
         const { start, end } = getFilterRange();
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
@@ -5700,6 +5757,14 @@
         if (state.filters.hideDone && task.status === 'done') return false;
         return true;
       });
+    }
+
+    function matchesAssigneeFilter(task) {
+      if (state.filters.assignee === 'me') return task.assignee === CURRENT_USER;
+      if (state.filters.assignee === 'search' && state.filters.assigneeQuery) {
+        return getUserDisplayName(task.assignee).toLowerCase().includes(state.filters.assigneeQuery.toLowerCase());
+      }
+      return true;
     }
 
     function priorityScore(priority) {
@@ -5716,7 +5781,7 @@
       if (field === 'type') return getTypeLabel(task.type);
       if (field === 'date') return task.date;
       if (field === 'deadline') return task.deadline || task.endDate || task.date;
-      if (field === 'time') return Number(normalizeTaskTime(task.time) || 99);
+      if (field === 'time') return getTaskStartHour(task.time);
       if (field === 'manual') return getTaskOrderValue(task);
       if (field === 'advertiser') {
         const index = getAdvertisers().indexOf(task.advertiser);
@@ -6023,6 +6088,12 @@
       dom.dailyList.innerHTML = tasks.length ? renderDailyGroups(tasks) : `
         <tr><td colspan="12"><div class="empty">아직 업무가 없습니다.<br>위에서 업무명과 광고주만 입력하면 바로 추가됩니다.</div></td></tr>
       `;
+      if (dom.dailyAdvertiserGroupToggle) {
+        const grouped = state.dailyAdvertiserGrouping;
+        dom.dailyAdvertiserGroupToggle.classList.toggle('active', grouped);
+        dom.dailyAdvertiserGroupToggle.setAttribute('aria-pressed', String(grouped));
+        dom.dailyAdvertiserGroupToggle.title = grouped ? '광고주 구분 섹션 숨기기' : '광고주 구분 섹션 보기';
+      }
       renderSortIndicators();
     }
 
@@ -6065,8 +6136,12 @@
         const isSelf = assigneeId === CURRENT_USER;
         const assigneeName = getUserDisplayName(assigneeId);
         const sectionClass = `assignee-section-row assignee-section-${idx % 4}${isSelf ? ' is-self-section' : ''}`;
-        const advertisers = getAdvertisers(assigneeTasks).filter(adv => assigneeTasks.some(t => t.advertiser === adv));
-        const advertiserRows = advertisers.map((adv, i) => renderAdvertiserGroup(assigneeTasks.filter(t => t.advertiser === adv), adv, i, sectionClass)).join('');
+        const advertiserRows = state.dailyAdvertiserGrouping
+          ? getAdvertisers(assigneeTasks)
+              .filter(adv => assigneeTasks.some(t => t.advertiser === adv))
+              .map((adv, i) => renderAdvertiserGroup(assigneeTasks.filter(t => t.advertiser === adv), adv, i, sectionClass))
+              .join('')
+          : assigneeTasks.map(task => renderTaskRow(task, sectionClass)).join('');
         const separator = idx > 0 ? '<tr class="daily-section-separator"><td colspan="12"></td></tr>' : '';
         return `${separator}
           <tr class="daily-assignee-top ${sectionClass}">
@@ -6122,6 +6197,20 @@
         .join('');
     }
 
+    function renderInlineTaskDate(task, field, dateKey, { overdue = false } = {}) {
+      const label = field === 'deadline' ? '데드라인' : '날짜';
+      const disabled = isMine(task) ? '' : 'disabled';
+      return `
+        <div class="inline-date-control ${field === 'deadline' ? 'deadline-date' : ''} ${overdue ? 'is-overdue' : ''}">
+          <input class="inline-date" type="text" inputmode="numeric" value="${formatCompactTaskDate(dateKey)}" maxlength="10" autocomplete="off" data-action="change-inline-date-text" data-date-field="${field}" data-date-value="${dateKey}" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} ${label} 직접 입력" title="26.06.26 형식으로 입력" ${disabled} />
+          <button class="inline-calendar-btn" type="button" data-action="open-inline-date-picker" aria-label="${escapeHtml(task.title)} ${label} 달력 열기" title="달력에서 ${label} 선택" ${disabled}>
+            <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12" rx="2"></rect><path d="M6.5 3v3M13.5 3v3M3 8h14M6 11h2M10 11h2M14 11h1M6 14h2M10 14h2"></path></svg>
+          </button>
+          <input class="inline-date-native" type="date" value="${dateKey}" data-action="change-inline-date-picker" data-date-field="${field}" data-task-id="${task.id}" tabindex="-1" aria-hidden="true" ${disabled} />
+        </div>
+      `;
+    }
+
     function renderTaskRow(task, sectionClass = '') {
       const completed = task.status === 'done';
       const deadline = task.deadline || task.endDate || task.date;
@@ -6140,13 +6229,13 @@
             </button>
           </td>
           <td class="date-cell" data-label="날짜">
-            <input class="inline-date" type="date" value="${task.date}" data-action="change-date" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 날짜 변경" ${readonlyAttr} />
+            ${renderInlineTaskDate(task, 'date', task.date)}
           </td>
           <td class="deadline-cell" data-label="데드라인">
-            <input class="inline-date deadline-date ${deadline < toDateKey(new Date()) && !completed ? 'is-overdue' : ''}" type="date" value="${deadline}" data-action="change-deadline" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 데드라인 변경" ${readonlyAttr} />
+            ${renderInlineTaskDate(task, 'deadline', deadline, { overdue: deadline < toDateKey(new Date()) && !completed })}
           </td>
           <td class="time-cell" data-label="시간">
-            <input class="inline-time" type="text" inputmode="numeric" value="${formatTaskTime(task.time)}" data-action="change-time" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시간 변경" placeholder="~N시" ${readonlyAttr} />
+            <input class="inline-time" type="text" inputmode="text" value="${formatTaskTime(task.time)}" data-action="change-time" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시간 변경" placeholder="ㅁ~ㅁ" ${readonlyAttr} />
           </td>
           <td class="advertiser-picker-cell" data-label="광고주">
             <button class="advertiser-picker-trigger" type="button" data-action="open-advertiser-picker" data-task-id="${task.id}" aria-haspopup="dialog" aria-label="${escapeHtml(task.title)} 광고주 변경" ${readonlyAttr}>
@@ -6206,7 +6295,7 @@
     }
 
     function renderWeekly() {
-      const tasks = viewTasks().filter(task => !isUnassignedRecord(task));
+      const tasks = viewTasks().filter(task => !isUnassignedRecord(task) && matchesAssigneeFilter(task));
       const weekDates = getWeekDates();
       const allAdvertisers = getSelectableAdvertisers();
       if (dom.weeklyAdvFilterPanel) {
@@ -6356,6 +6445,7 @@
       const { start, end } = getFilterRange();
       const tasks = state.tasks.filter(task => {
         if (isUnassignedRecord(task)) return false;
+        if (!matchesAssigneeFilter(task)) return false;
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
         return true;
@@ -7544,8 +7634,8 @@
     }
 
     function formatDailyAiTime(value) {
-      const hour = normalizeTaskTime(value);
-      return hour ? `${hour}시 ` : '';
+      const time = formatTaskTime(value);
+      return time ? `${time} ` : '';
     }
 
     function isTaskActiveOnDate(task, dateKey) {
@@ -8052,12 +8142,22 @@
         if (action === 'close-history') { closeHistory(); return; }
         if (action === 'clear-completed') clearCompleted();
         if (action === 'reset-filters') resetFilters();
+        if (action === 'toggle-daily-advertiser-groups') {
+          state.dailyAdvertiserGrouping = !state.dailyAdvertiserGrouping;
+          exitReorderMode();
+          renderDailyOnly({ refreshShell: false, refreshOptions: false, refreshStats: false, animate: false });
+          return;
+        }
+        if (action === 'open-inline-date-picker') {
+          openNativeDatePicker(target.closest('.inline-date-control')?.querySelector('.inline-date-native'));
+          return;
+        }
         if (action === 'open-daily-ai') { openDailyAiDialog(); return; }
         if (action === 'close-daily-ai') { closeDailyAiDialog(); return; }
         if (action === 'set-assignee-mode') {
           state.filters.assignee = target.dataset.mode;
           state.filters.assigneeQuery = '';
-          if (dom.assigneeSearchInput) dom.assigneeSearchInput.value = '';
+          qsa('[data-assignee-search]').forEach(input => { input.value = ''; });
           syncAssigneeFilterUI();
           render();
           return;
@@ -8184,10 +8284,26 @@
         }
         const statusSelect = event.target.closest('[data-action="change-status"]');
         if (statusSelect) { setTaskStatus(statusSelect.dataset.taskId, statusSelect.value); return; }
-        const dateInput = event.target.closest('[data-action="change-date"]');
-        if (dateInput) { updateTask(dateInput.dataset.taskId, { date: dateInput.value }); return; }
-        const deadlineInput = event.target.closest('[data-action="change-deadline"]');
-        if (deadlineInput) { updateTask(deadlineInput.dataset.taskId, { deadline: deadlineInput.value }); return; }
+        const manualDateInput = event.target.closest('[data-action="change-inline-date-text"]');
+        if (manualDateInput) {
+          const dateValue = parseCompactTaskDate(manualDateInput.value);
+          if (!dateValue) {
+            manualDateInput.value = formatCompactTaskDate(manualDateInput.dataset.dateValue);
+            showToast('날짜는 26.06.26 형식으로 입력해 주세요.');
+            return;
+          }
+          if (dateValue === manualDateInput.dataset.dateValue) {
+            manualDateInput.value = formatCompactTaskDate(dateValue);
+            return;
+          }
+          updateTask(manualDateInput.dataset.taskId, { [manualDateInput.dataset.dateField]: dateValue });
+          return;
+        }
+        const pickerDateInput = event.target.closest('[data-action="change-inline-date-picker"]');
+        if (pickerDateInput?.value) {
+          updateTask(pickerDateInput.dataset.taskId, { [pickerDateInput.dataset.dateField]: pickerDateInput.value });
+          return;
+        }
         const timeInput = event.target.closest('[data-action="change-time"]');
         if (timeInput) { updateTask(timeInput.dataset.taskId, { time: timeInput.value }); return; }
         const prioritySelect = event.target.closest('[data-action="change-priority"]');
@@ -8533,12 +8649,25 @@
       dom.filterStatus.addEventListener('change', event => { state.filters.status = event.target.value; render(); });
       dom.filterPriority.addEventListener('change', event => { state.filters.priority = event.target.value; render(); });
       dom.hideDone.addEventListener('change', event => { state.filters.hideDone = event.target.checked; render(); });
-      if (dom.assigneeSearchInput) {
-        dom.assigneeSearchInput.addEventListener('input', event => {
+      document.addEventListener('keydown', event => {
+        const manualDateInput = event.target.closest('[data-action="change-inline-date-text"]');
+        if (!manualDateInput) return;
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          manualDateInput.blur();
+        }
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          manualDateInput.value = formatCompactTaskDate(manualDateInput.dataset.dateValue);
+          manualDateInput.blur();
+        }
+      });
+      qsa('[data-assignee-search]').forEach(input => {
+        input.addEventListener('input', event => {
           state.filters.assigneeQuery = event.target.value;
           render();
         });
-      }
+      });
 
       dom.importInput.addEventListener('change', event => {
         const file = event.target.files[0];
