@@ -4433,7 +4433,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 12:28 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 15:35 KST</span>
     </div>
   </footer>
 
@@ -5010,10 +5010,13 @@
       { id: 'fri', label: '매주 금', day: 5 }
     ];
 
+    const INITIAL_TODAY = toDateKey(new Date());
+    const INITIAL_DAILY_RANGE = getBusinessWeekRange(INITIAL_TODAY);
+
     const state = {
       view: 'daily',
-      selectedDate: toDateKey(new Date()),
-      weekStart: toDateKey(new Date()),
+      selectedDate: INITIAL_TODAY,
+      weekStart: INITIAL_DAILY_RANGE.start,
       tasks: [],
       routines: [],
       filters: {
@@ -5024,14 +5027,14 @@
         type: 'all',
         assignee: 'all',
         assigneeQuery: '',
-        startDate: toDateKey(new Date()),
-        endDate: addDays(toDateKey(new Date()), 6),
+        startDate: INITIAL_DAILY_RANGE.start,
+        endDate: INITIAL_DAILY_RANGE.end,
         hideDone: false
       },
       advertiserFilter: [],
       weeklyAdvertiserFilter: [],
       sortMode: 'smart',
-      tableSort: { field: 'manual', direction: 'asc' },
+      tableSort: { field: 'time', direction: 'asc' },
       dailyAdvertiserGrouping: false,
       editingId: null,
       taskDialogMode: 'edit',
@@ -6031,9 +6034,13 @@
     }
 
     function resetFilters() {
-      state.filters = { query: '', advertiser: 'all', status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: state.selectedDate, endDate: addDays(state.selectedDate, 6), hideDone: false };
+      const today = toDateKey(new Date());
+      const defaultRange = getBusinessWeekRange(today);
+      state.selectedDate = today;
+      state.weekStart = defaultRange.start;
+      state.filters = { query: '', advertiser: 'all', status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: defaultRange.start, endDate: defaultRange.end, hideDone: false };
       state.sortMode = 'smart';
-      state.tableSort = { field: 'manual', direction: 'asc' };
+      state.tableSort = { field: 'time', direction: 'asc' };
       render();
       showToast('필터를 초기화했습니다.');
     }
