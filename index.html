@@ -4144,7 +4144,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2417" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2418" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4271,7 +4271,7 @@
               </div>
               <div class="field">
                 <label for="taskTime">시간</label>
-                <input id="taskTime" type="text" inputmode="text" placeholder="ㅁ~ㅁ" autocomplete="off" />
+                <input id="taskTime" type="text" inputmode="text" placeholder="예: 15:35 ~ 16:10" autocomplete="off" />
               </div>
               <div class="field">
                 <label for="taskStatus">상태</label>
@@ -4433,7 +4433,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 12:01 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 12:28 KST</span>
     </div>
   </footer>
 
@@ -4462,7 +4462,7 @@
           </div>
           <div class="field">
             <label for="editTime">시간</label>
-            <input id="editTime" type="text" inputmode="text" placeholder="ㅁ~ㅁ" />
+            <input id="editTime" type="text" inputmode="text" placeholder="예: 15:35 ~ 16:10" />
           </div>
           <div class="field">
             <label for="editPriority">우선순위</label>
@@ -5300,31 +5300,54 @@
       return Number.isFinite(hour) ? String(hour) : '';
     }
 
+    function normalizeTaskClock(value) {
+      const raw = String(value ?? '').trim().replace(/[시분\s]/g, '');
+      if (!raw) return '';
+      let hourText = '';
+      let minuteText = '0';
+      if (raw.includes(':')) {
+        const parts = raw.split(':');
+        hourText = parts[0];
+        minuteText = parts[1] || '0';
+      } else {
+        const digits = raw.replace(/\D/g, '');
+        if (!digits) return '';
+        if (digits.length <= 2) {
+          hourText = digits;
+        } else {
+          hourText = digits.slice(0, -2);
+          minuteText = digits.slice(-2);
+        }
+      }
+      const hour = Math.max(0, Math.min(23, Number(hourText)));
+      const minute = Math.max(0, Math.min(59, Number(minuteText)));
+      if (!Number.isFinite(hour) || !Number.isFinite(minute)) return '';
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+
     function normalizeTaskTime(value) {
       const raw = String(value ?? '').trim();
       if (!raw) return '';
-      const numbers = raw
-        .replace(/[시\s]/g, '')
-        .replace(/[~～\-–—]/g, '~')
-        .match(/\d{1,2}/g);
-      if (!numbers?.length) return '';
-      const start = normalizeTaskHour(numbers[0]);
-      const end = normalizeTaskHour(numbers[1] || numbers[0]);
-      return start ? `${start}~${end || start}` : '';
+      const parts = raw.replace(/[～\-–—]/g, '~').split('~');
+      const start = normalizeTaskClock(parts[0]);
+      const end = normalizeTaskClock(parts[1] || parts[0]);
+      const safeStart = start || end;
+      const safeEnd = end || start;
+      return safeStart ? `${safeStart}~${safeEnd}` : '';
     }
 
     function getTaskStartHour(value) {
       const normalized = normalizeTaskTime(value);
-      if (!normalized) return 99;
-      const start = Number(normalized.split('~')[0]);
-      return Number.isFinite(start) ? start : 99;
+      if (!normalized) return 24 * 60 + 1;
+      const [hour, minute] = normalized.split('~')[0].split(':').map(Number);
+      return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : 24 * 60 + 1;
     }
 
     function formatTaskTime(value) {
       const normalized = normalizeTaskTime(value);
       if (!normalized) return '';
       const [start, end = start] = normalized.split('~');
-      return `${start}~${end}시`;
+      return `${start} ~ ${end}`;
     }
 
     function normalizeRoutineDay(value) {
@@ -6223,9 +6246,9 @@
       const disabled = isMine(task) ? '' : 'disabled';
       return `
         <div class="inline-time-control" role="group" aria-label="${escapeHtml(task.title)} 시간 변경" data-task-id="${task.id}">
-          <input class="inline-time-part" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${start}" data-action="change-time-part" data-time-part="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 시간" autocomplete="off" ${disabled} />
+          <input class="inline-time-part" type="text" inputmode="text" maxlength="5" value="${start}" data-action="change-time-part" data-time-part="start" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 시작 시간" autocomplete="off" ${disabled} />
           <span class="inline-time-separator" aria-hidden="true">~</span>
-          <input class="inline-time-part" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${end}" data-action="change-time-part" data-time-part="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 시간" autocomplete="off" ${disabled} />
+          <input class="inline-time-part" type="text" inputmode="text" maxlength="5" value="${end}" data-action="change-time-part" data-time-part="end" data-task-id="${task.id}" aria-label="${escapeHtml(task.title)} 종료 시간" autocomplete="off" ${disabled} />
         </div>
       `;
     }
@@ -6235,8 +6258,8 @@
       const startInput = qs('[data-time-part="start"]', timeControl);
       const endInput = qs('[data-time-part="end"]', timeControl);
       if (!startInput || !endInput) return;
-      startInput.value = startInput.value ? normalizeTaskHour(startInput.value) : '';
-      endInput.value = endInput.value ? normalizeTaskHour(endInput.value) : '';
+      startInput.value = startInput.value ? normalizeTaskClock(startInput.value) : '';
+      endInput.value = endInput.value ? normalizeTaskClock(endInput.value) : '';
       const nextTime = startInput.value || endInput.value ? `${startInput.value}~${endInput.value}` : '';
       const taskId = timeControl.dataset.taskId;
       const task = state.tasks.find(item => item.id === taskId);
@@ -7684,8 +7707,8 @@
         .filter(task => task.status !== 'done')
         .filter(task => !task.assignee || task.assignee === CURRENT_USER)
         .sort((a, b) => {
-          const timeA = Number(normalizeTaskTime(a.time) || 99);
-          const timeB = Number(normalizeTaskTime(b.time) || 99);
+          const timeA = getTaskStartHour(a.time);
+          const timeB = getTaskStartHour(b.time);
           return priorityScore(a.priority) - priorityScore(b.priority)
             || timeA - timeB
             || statusScore(a.status) - statusScore(b.status)

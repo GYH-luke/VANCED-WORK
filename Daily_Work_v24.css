@@ -1553,7 +1553,7 @@ html[data-theme="dark"] .inline-calendar-btn:hover { color:#9eb6ff; background:r
 
 .inline-time-control {
   width:100%;
-  max-width:96px;
+  max-width:134px;
   min-width:0;
   height:32px;
   display:grid;
@@ -1577,7 +1577,7 @@ html[data-theme="dark"] .inline-calendar-btn:hover { color:#9eb6ff; background:r
   box-shadow:none!important;
   color:var(--ink-soft)!important;
   -webkit-text-fill-color:var(--ink-soft)!important;
-  font-size:11px!important;
+  font-size:10.8px!important;
   font-weight:820!important;
   line-height:30px!important;
   text-align:center!important;
@@ -1621,7 +1621,7 @@ html[data-theme="dark"] .inline-time-separator {
 
 @media (min-width:861px) {
   .task-table {
-    --daily-grid:44px 108px 108px 104px 132px minmax(310px,1fr) 72px 84px 52px 74px 56px 58px!important;
+    --daily-grid:44px 108px 108px 142px 128px minmax(290px,1fr) 72px 84px 52px 74px 56px 58px!important;
   }
   .task-table th:nth-child(2),
   .task-table th:nth-child(3),
@@ -1665,7 +1665,7 @@ html[data-theme="dark"] .inline-time-separator {
   .inline-date-control { width:92px; max-width:92px; height:28px; }
   .inline-date-control .inline-date { height:26px!important; min-height:26px!important; line-height:26px!important; font-size:10.5px!important; }
   .inline-calendar-btn { height:26px; }
-  .inline-time-control { width:92px; max-width:92px; height:28px; }
+  .inline-time-control { width:128px; max-width:128px; height:28px; }
   .inline-time-part { height:26px!important; min-height:26px!important; line-height:26px!important; font-size:10.5px!important; }
   .inline-time-separator { height:26px; }
 }
