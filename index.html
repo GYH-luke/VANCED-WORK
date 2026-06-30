@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 19:44 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 20:13 KST</span>
     </div>
   </footer>
 
@@ -5446,6 +5446,26 @@
       return ROUTINE_DAYS.some(item => item.id === raw) ? raw : (aliases[raw] || 'daily');
     }
 
+    function isDateKey(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+    }
+
+    function normalizeRoutineSkippedDates(value) {
+      const result = {};
+      if (Array.isArray(value)) {
+        value.forEach(dateKey => {
+          if (isDateKey(dateKey)) result[dateKey] = true;
+        });
+        return result;
+      }
+      if (value && typeof value === 'object') {
+        Object.entries(value).forEach(([dateKey, skipped]) => {
+          if (isDateKey(dateKey) && skipped !== false && skipped != null) result[dateKey] = true;
+        });
+      }
+      return result;
+    }
+
     function renderRoutineDayOptions(selected) {
       const value = normalizeRoutineDay(selected);
       return ROUTINE_DAYS
@@ -5471,6 +5491,26 @@
     function getTaskRoutineDay(task) {
       const routine = getRoutineForTask(task);
       return normalizeRoutineDay(routine?.routineDay || task?.routineDay);
+    }
+
+    function getRoutineSkippedDates(routine) {
+      if (!routine) return {};
+      routine.skippedDates = normalizeRoutineSkippedDates(routine.skippedDates);
+      return routine.skippedDates;
+    }
+
+    function isRoutineDateSkipped(routine, dateKey) {
+      return Boolean(getRoutineSkippedDates(routine)[dateKey]);
+    }
+
+    function setRoutineDateSkipped(routineId, dateKey, skipped = true) {
+      const routine = state.routines.find(item => item.id === routineId);
+      if (!routine || !isDateKey(dateKey)) return false;
+      const skippedDates = getRoutineSkippedDates(routine);
+      if (skipped) skippedDates[dateKey] = true;
+      else delete skippedDates[dateKey];
+      routine.skippedDates = skippedDates;
+      return true;
     }
 
     function routineTaskRunsOnDate(task, dateKey = task?.date) {
@@ -5565,6 +5605,7 @@
         memo: routine.memo || '',
         time: normalizeTaskTime(routine.time || ''),
         routineDay: normalizeRoutineDay(routine.routineDay || routine.repeatDay || routine.schedule),
+        skippedDates: normalizeRoutineSkippedDates(routine.skippedDates || routine.deletedDates || routine.skipDates),
         createdAt: routine.createdAt || new Date().toISOString()
       };
     }
@@ -5721,6 +5762,7 @@
       let changed = false;
       state.routines.forEach(routine => {
         if (!routineRunsOnDate(routine, dateKey)) return;
+        if (isRoutineDateSkipped(routine, dateKey)) return;
         const exists = state.tasks.some(task => task.routineId === routine.id && task.date === dateKey);
         if (!exists) {
           const assignee = routine.assignee || '';
@@ -7749,10 +7791,15 @@
         bottom: anchorBounds.bottom
       } : null;
       const [removed] = state.tasks.splice(index, 1);
+      const routineSkip = removed.routineId && removed.date
+        ? { routineId: removed.routineId, date: removed.date }
+        : null;
+      if (routineSkip) setRoutineDateSkipped(routineSkip.routineId, routineSkip.date, true);
       logHistory('TASK_DELETE', `"${removed.title}" 업무를 삭제했습니다`);
       state.lastUndo = {
         label: '삭제 취소',
         run: () => {
+          if (routineSkip) setRoutineDateSkipped(routineSkip.routineId, routineSkip.date, false);
           state.tasks.splice(index, 0, removed);
           save();
           render();

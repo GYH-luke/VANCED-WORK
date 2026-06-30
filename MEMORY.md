@@ -12,6 +12,8 @@ Before working on Vanced Work, read:
 
 Always keep this memory current when project rules, deployment flow, Firebase behavior, or user preferences change.
 
+Routine instance deletion is production-sensitive: generated routine tasks use the parent routine's `skippedDates` map to prevent a deleted date instance from being recreated on render, reload, or Firebase sync.
+
 Never finish a requested change just because files were edited. Verify the result, judge whether it fully solves the user's problem, and if it does not, infer the likely root cause, patch again, and rerun verification before reporting completion.
 
 When uploading to GitHub, include the full Codex operating bundle (`.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, `AGENTS.md`) so every PC has current context.

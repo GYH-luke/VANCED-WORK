@@ -107,6 +107,7 @@ If `git push` says `Everything up-to-date`, GitHub already matches local.
 - `renderWeekly`, weekly resize, weekly quick add
 - advertiser filtering, order, and delete flows
 - `normalizeTask`, `save`, `syncWorkspaceChanges`, Firebase listeners
+- routine `skippedDates` suppression for deleted generated routine instances
 - delegated `data-action` click/change handlers
 - `LOCAL_MIGRATION_EXCLUDED_TASKS`
 - localStorage keys beginning with `adwork.`
