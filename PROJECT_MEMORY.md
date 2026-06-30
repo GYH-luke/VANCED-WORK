@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-06-30 10:05 KST
+Last updated: 2026-06-30 11:06 KST
 
 ## Project Identity
 
@@ -52,6 +52,7 @@ When giving the user final results, include clickable links to the actual folder
 - Weekly assignee columns stay compact, while focus columns use a wider layout with normal-weight 12px text and automatic vertical growth.
 - Routine tasks support `Daily`, `Weekly Mon` through `Weekly Fri` routine-day values. In the Daily tab, D2+ date filters must show routine task rows only when the task start date is the real current date, not the selected filter range start date; future or past routine copies in a multi-day range must stay hidden.
 - Daily table sorting supports stacked criteria. Clicking a sort header promotes it to the primary sort while preserving previous criteria as secondary sorts, such as start date ascending plus time ascending. Clicking an active sort header toggles ascending and descending in both directions.
+- Changing a task start date keeps the existing end date when that end date is the same as or later than the new start date. Only an end date that would fall before the new start date is moved forward to match the new start date.
 - Daily task rows include a left move handle. Dragging uses a real placeholder row plus FLIP row motion, so nearby rows visibly move aside while the task is reordered within the same advertiser or moved into another advertiser section. The saved data uses a manual `order` value.
 - Change history is admin-only.
 - Global delete-all functionality is removed.

@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 09:58 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 11:06 KST</span>
     </div>
   </footer>
 
@@ -7003,6 +7003,10 @@
       closeAdvertiserPicker();
     }
 
+    function resolveTaskEndForStartChange(currentEnd, nextStart) {
+      return currentEnd < nextStart ? nextStart : currentEnd;
+    }
+
     function updateTask(id, patch, { renderView = true } = {}) {
       const task = state.tasks.find(item => item.id === id);
       if (!task) return;
@@ -7010,8 +7014,8 @@
       const previousAdvertiser = task.advertiser;
       const nextPatch = { ...patch };
       if (nextPatch.date && !nextPatch.endDate && !nextPatch.deadline) {
-        const duration = daysBetween(task.date, task.deadline || task.endDate || task.date);
-        nextPatch.deadline = addDays(nextPatch.date, duration);
+        const currentEnd = task.deadline || task.endDate || task.date;
+        nextPatch.deadline = resolveTaskEndForStartChange(currentEnd, nextPatch.date);
         nextPatch.endDate = nextPatch.deadline;
       }
       const nextStart = nextPatch.date || task.date;
