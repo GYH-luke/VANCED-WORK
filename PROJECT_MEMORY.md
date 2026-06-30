@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-06-30 09:50 KST
+Last updated: 2026-06-30 09:58 KST
 
 ## Project Identity
 
@@ -50,7 +50,7 @@ When giving the user final results, include clickable links to the actual folder
 - Weekly is fixed to business-week D5: Monday through Friday only. `Today` opens the current Monday-Friday range, and previous/next navigation moves by one calendar week.
 - Advertiser `Today` navigation should start at today by D7.
 - Weekly assignee columns stay compact, while focus columns use a wider layout with normal-weight 12px text and automatic vertical growth.
-- Routine tasks support `Daily`, `Weekly Mon` through `Weekly Fri` routine-day values. In the Daily tab, routine task rows are shown only when the task start date is today's date; future or past routine copies in a multi-day range must stay hidden.
+- Routine tasks support `Daily`, `Weekly Mon` through `Weekly Fri` routine-day values. In the Daily tab, D2+ date filters must show routine task rows only when the task start date is the real current date, not the selected filter range start date; future or past routine copies in a multi-day range must stay hidden.
 - Daily table sorting supports stacked criteria. Clicking a sort header promotes it to the primary sort while preserving previous criteria as secondary sorts, such as start date ascending plus time ascending. Clicking an active sort header toggles ascending and descending in both directions.
 - Daily task rows include a left move handle. Dragging uses a real placeholder row plus FLIP row motion, so nearby rows visibly move aside while the task is reordered within the same advertiser or moved into another advertiser section. The saved data uses a manual `order` value.
 - Change history is admin-only.
