@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-29 23:37 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 09:37 KST</span>
     </div>
   </footer>
 
@@ -5101,6 +5101,7 @@
       weeklyAdvertiserFilter: [],
       sortMode: 'smart',
       tableSort: { field: 'time', direction: 'asc' },
+      tableSorts: [{ field: 'time', direction: 'asc' }],
       dailyAdvertiserGrouping: false,
       editingId: null,
       taskDialogMode: 'edit',
@@ -5473,13 +5474,23 @@
     }
 
     function routineTaskRunsOnDate(task, dateKey = task?.date) {
-      if (!task?.isRoutine && !task?.routineId) return true;
+      if (!isRoutineTask(task)) return true;
       const routine = getRoutineForTask(task);
       return routineRunsOnDate(routine || task, dateKey);
     }
 
+    function isRoutineTask(task) {
+      return Boolean(task?.isRoutine || task?.routineId);
+    }
+
+    function shouldShowDailyRoutineTask(task) {
+      if (!isRoutineTask(task)) return true;
+      const today = toDateKey(new Date());
+      return task.date === today && routineTaskRunsOnDate(task, today);
+    }
+
     function shouldShowRoutineTaskInRange(task, start, end) {
-      if (!task?.isRoutine && !task?.routineId) return true;
+      if (!isRoutineTask(task)) return true;
       if (!routineTaskRunsOnDate(task, task.date)) return false;
       if (!start || !end || daysBetween(start, end) < 1) return true;
       const routineDay = getTaskRoutineDay(task);
@@ -5827,6 +5838,7 @@
           const q = state.filters.assigneeQuery.toLowerCase();
           if (!getUserDisplayName(task.assignee).toLowerCase().includes(q)) return false;
         }
+        if (!shouldShowDailyRoutineTask(task)) return false;
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
         if (!shouldShowRoutineTaskInRange(task, start, end)) return false;
@@ -5845,6 +5857,7 @@
         if (state.filters.type !== 'all' && task.type !== state.filters.type) return false;
         if (!matchesAssigneeFilter(task)) return false;
         const { start, end } = getFilterRange();
+        if (state.view === 'daily' && !shouldShowDailyRoutineTask(task)) return false;
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
         if (!shouldShowRoutineTaskInRange(task, start, end)) return false;
@@ -5897,15 +5910,52 @@
       return createdA.localeCompare(createdB) || a.title.localeCompare(b.title, 'ko', { numeric: true });
     }
 
+    function getDailyTableSorts() {
+      const source = Array.isArray(state.tableSorts) && state.tableSorts.length
+        ? state.tableSorts
+        : (state.tableSort?.field ? [state.tableSort] : []);
+      const seen = new Set();
+      return source
+        .filter(sort => sort?.field && !seen.has(sort.field) && seen.add(sort.field))
+        .map(sort => ({
+          field: sort.field,
+          direction: sort.direction === 'desc' ? 'desc' : 'asc'
+        }));
+    }
+
+    function setDailyTableSorts(sorts) {
+      const next = Array.isArray(sorts) && sorts.length
+        ? sorts.map(sort => ({
+          field: sort.field,
+          direction: sort.direction === 'desc' ? 'desc' : 'asc'
+        }))
+        : [{ field: 'time', direction: 'asc' }];
+      state.tableSorts = next;
+      state.tableSort = next[0] || null;
+    }
+
+    function promoteDailyTableSort(field) {
+      const current = getDailyTableSorts();
+      const existingIndex = current.findIndex(sort => sort.field === field);
+      const currentDirection = existingIndex >= 0 ? current[existingIndex].direction : 'asc';
+      const direction = existingIndex === 0 && currentDirection === 'asc' ? 'desc' : currentDirection;
+      const next = [
+        { field, direction },
+        ...current.filter(sort => sort.field !== field && sort.field !== 'manual')
+      ];
+      setDailyTableSorts(next);
+    }
+
     function sortTasks(tasks) {
       return [...tasks].sort((a, b) => {
-        if (state.view === 'daily' && state.tableSort?.field) {
-          if (state.tableSort.field === 'manual') return compareDailyManualOrder(a, b);
-          const base = compareField(a, b, state.tableSort.field);
-          if (base !== 0) return state.tableSort.direction === 'asc' ? base : -base;
+        if (state.view === 'daily') {
+          const dailySorts = getDailyTableSorts();
+          for (const sort of dailySorts) {
+            const base = sort.field === 'manual' ? compareDailyManualOrder(a, b) : compareField(a, b, sort.field);
+            if (base !== 0) return sort.direction === 'asc' ? base : -base;
+          }
           return stableDailyCompare(a, b);
         }
-        if (state.view === 'daily') return a.date.localeCompare(b.date) || stableDailyCompare(a, b);
         if (state.sortMode === 'priority') return priorityScore(a.priority) - priorityScore(b.priority) || a.title.localeCompare(b.title, 'ko');
         if (state.sortMode === 'date') return a.date.localeCompare(b.date) || priorityScore(a.priority) - priorityScore(b.priority);
         if (state.sortMode === 'advertiser') {
@@ -6108,7 +6158,7 @@
       state.weekStart = defaultRange.start;
       state.filters = { query: '', advertiser: 'all', status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: defaultRange.start, endDate: defaultRange.end, hideDone: false };
       state.sortMode = 'smart';
-      state.tableSort = { field: 'time', direction: 'asc' };
+      setDailyTableSorts([{ field: 'time', direction: 'asc' }]);
       render();
       showToast('필터를 초기화했습니다.');
     }
@@ -6271,11 +6321,15 @@
     }
 
     function renderSortIndicators() {
+      const sorts = getDailyTableSorts();
       qsa('[data-sort-indicator]').forEach(el => {
         const field = el.dataset.sortIndicator;
-        const active = state.tableSort?.field === field;
-        el.textContent = active ? (state.tableSort.direction === 'asc' ? '↑' : '↓') : '';
-        el.parentElement?.setAttribute('aria-sort', active ? (state.tableSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+        const index = sorts.findIndex(sort => sort.field === field);
+        const active = index >= 0;
+        const sort = active ? sorts[index] : null;
+        el.textContent = active ? `${sort.direction === 'asc' ? '↑' : '↓'}${sorts.length > 1 ? index + 1 : ''}` : '';
+        el.parentElement?.setAttribute('aria-sort', active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+        el.parentElement?.setAttribute('aria-pressed', String(active));
       });
     }
 
@@ -7108,7 +7162,7 @@
         item.order = (index + 1) * 1000;
       });
       task.updatedAt = new Date().toISOString();
-      state.tableSort = { field: 'manual', direction: 'asc' };
+      setDailyTableSorts([{ field: 'manual', direction: 'asc' }]);
       logHistory('TASK_REORDER', previousAdvertiser === targetAdvertiser
         ? `"${task.title}" 업무 순서를 변경했습니다`
         : `"${task.title}" 업무를 ${targetAdvertiser} 영역으로 이동했습니다`);
@@ -7494,7 +7548,7 @@
         if (item) item.order = (index + 1) * 1000;
       });
       task.updatedAt = new Date().toISOString();
-      state.tableSort = { field: 'manual', direction: 'asc' };
+      setDailyTableSorts([{ field: 'manual', direction: 'asc' }]);
       logHistory('TASK_REORDER', `"${task.title}" 업무 순서를 변경했습니다.`);
       save();
       renderDailyOnly({ refreshShell: false, refreshOptions: false, refreshStats: true, animate: false });
@@ -8343,11 +8397,7 @@
         if (openMenu) openMenu.removeAttribute('open');
 
         if (target.dataset.sortField) {
-          const field = target.dataset.sortField;
-          state.tableSort = {
-            field,
-            direction: state.tableSort?.field === field && state.tableSort.direction === 'asc' ? 'desc' : 'asc'
-          };
+          promoteDailyTableSort(target.dataset.sortField);
           render();
           return;
         }
