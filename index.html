@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 11:46 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 12:42 KST</span>
     </div>
   </footer>
 
@@ -8375,6 +8375,16 @@
     }
 
     function bindEvents() {
+      let taskDialogPointerStartedInside = false;
+
+      function isEventInsideTaskDialog(event) {
+        const rect = dom.taskDialog.getBoundingClientRect();
+        return event.clientX >= rect.left
+          && event.clientX <= rect.right
+          && event.clientY >= rect.top
+          && event.clientY <= rect.bottom;
+      }
+
       document.addEventListener('pointerdown', event => {
         const dailyHandle = event.target.closest('[data-daily-drag-handle]');
         if (dailyHandle) {
@@ -9073,7 +9083,18 @@
       dom.dailyAiCopyBtn.addEventListener('click', copyDailyAiText);
 
       dom.taskDialog.addEventListener('cancel', event => { event.preventDefault(); closeEditDialog(); });
-      dom.taskDialog.addEventListener('click', e => { if (e.target === dom.taskDialog) closeEditDialog(); });
+      dom.taskDialog.addEventListener('pointerdown', event => {
+        taskDialogPointerStartedInside = isEventInsideTaskDialog(event);
+      });
+      dom.taskDialog.addEventListener('pointercancel', () => {
+        taskDialogPointerStartedInside = false;
+      });
+      dom.taskDialog.addEventListener('click', event => {
+        if (event.target === dom.taskDialog && !taskDialogPointerStartedInside && !isEventInsideTaskDialog(event)) {
+          closeEditDialog();
+        }
+        taskDialogPointerStartedInside = false;
+      });
       dom.advertiserDialog.addEventListener('cancel', event => { event.preventDefault(); closeAdvertiserDialog(); });
       dom.confirmDialog.addEventListener('cancel', event => { event.preventDefault(); closeConfirm(); });
       dom.dailyAiDialog.addEventListener('cancel', event => { event.preventDefault(); closeDailyAiDialog(); });
