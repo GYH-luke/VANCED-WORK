@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 20:13 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 21:39 KST</span>
     </div>
   </footer>
 
@@ -5560,6 +5560,10 @@
       return maxOrder + 1000;
     }
 
+    function getRoutineTaskInstanceId(routineId, dateKey) {
+      return `task_${routineId}_${dateKey}`;
+    }
+
     function normalizeAdvertiserKeyword(value) {
       return String(value || '').toLowerCase().replace(/\s+/g, '');
     }
@@ -5767,6 +5771,7 @@
         if (!exists) {
           const assignee = routine.assignee || '';
           state.tasks.push(normalizeTask({
+            id: getRoutineTaskInstanceId(routine.id, dateKey),
             title: routine.title,
             advertiser: routine.advertiser,
             assignee,
@@ -7790,17 +7795,28 @@
         right: anchorBounds.right,
         bottom: anchorBounds.bottom
       } : null;
-      const [removed] = state.tasks.splice(index, 1);
+      const removed = state.tasks[index];
       const routineSkip = removed.routineId && removed.date
         ? { routineId: removed.routineId, date: removed.date }
         : null;
+      const removedEntries = routineSkip
+        ? state.tasks
+          .map((task, taskIndex) => ({ task, index: taskIndex }))
+          .filter(entry => entry.task.routineId === routineSkip.routineId && entry.task.date === routineSkip.date)
+        : [{ task: removed, index }];
+      const removedIds = new Set(removedEntries.map(entry => entry.task.id));
+      state.tasks = state.tasks.filter(task => !removedIds.has(task.id));
       if (routineSkip) setRoutineDateSkipped(routineSkip.routineId, routineSkip.date, true);
-      logHistory('TASK_DELETE', `"${removed.title}" 업무를 삭제했습니다`);
+      const duplicateDetail = removedEntries.length > 1 ? ` (중복 인스턴스 ${removedEntries.length}개 정리)` : '';
+      logHistory('TASK_DELETE', `"${removed.title}" 업무를 삭제했습니다${duplicateDetail}`);
       state.lastUndo = {
         label: '삭제 취소',
         run: () => {
           if (routineSkip) setRoutineDateSkipped(routineSkip.routineId, routineSkip.date, false);
-          state.tasks.splice(index, 0, removed);
+          removedEntries.forEach(entry => {
+            if (state.tasks.some(task => task.id === entry.task.id)) return;
+            state.tasks.splice(Math.min(entry.index, state.tasks.length), 0, entry.task);
+          });
           save();
           render();
           showToast('삭제를 취소했습니다.');
@@ -7808,7 +7824,8 @@
       };
       save();
       render();
-      showToast(`"${removed.title}" 삭제됨`, true, undoAnchor);
+      const cleanupNotice = removedEntries.length > 1 ? ` · 겹친 ${removedEntries.length}개 함께 정리` : '';
+      showToast(`"${removed.title}" 삭제됨${cleanupNotice}`, true, undoAnchor);
     }
 
     function deleteRoutine(id) {
