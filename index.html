@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 09:37 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 09:50 KST</span>
     </div>
   </footer>
 
@@ -5938,7 +5938,9 @@
       const current = getDailyTableSorts();
       const existingIndex = current.findIndex(sort => sort.field === field);
       const currentDirection = existingIndex >= 0 ? current[existingIndex].direction : 'asc';
-      const direction = existingIndex === 0 && currentDirection === 'asc' ? 'desc' : currentDirection;
+      const direction = existingIndex >= 0
+        ? (currentDirection === 'asc' ? 'desc' : 'asc')
+        : 'asc';
       const next = [
         { field, direction },
         ...current.filter(sort => sort.field !== field && sort.field !== 'manual')
