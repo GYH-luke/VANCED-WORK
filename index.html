@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 21:39 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 21:57 KST</span>
     </div>
   </footer>
 
@@ -5516,6 +5516,7 @@
     function routineTaskRunsOnDate(task, dateKey = task?.date) {
       if (!isRoutineTask(task)) return true;
       const routine = getRoutineForTask(task);
+      if (routine && isRoutineDateSkipped(routine, dateKey)) return false;
       return routineRunsOnDate(routine || task, dateKey);
     }
 
@@ -6689,6 +6690,7 @@
       const { start, end } = getFilterRange();
       const tasks = state.tasks.filter(task => {
         if (isUnassignedRecord(task)) return false;
+        if (!routineTaskRunsOnDate(task, task.date)) return false;
         if (!matchesAssigneeFilter(task)) return false;
         if (start && task.date < start) return false;
         if (end && task.date > end) return false;
