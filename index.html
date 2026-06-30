@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 11:06 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 11:22 KST</span>
     </div>
   </footer>
 
@@ -7943,11 +7943,43 @@
       return start <= dateKey && end >= dateKey;
     }
 
+    function getDailyAiRoutineKey(task) {
+      const assignee = String(task.assignee || '').trim().toLowerCase();
+      const advertiser = normalizeAdvertiserKeyword(task.advertiser);
+      const title = String(task.title || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      return `${assignee}\u0000${advertiser}\u0000${title}`;
+    }
+
+    function dedupeDailyAiRoutineTasks(tasks, dateKey) {
+      const result = [];
+      const routineIndexes = new Map();
+      tasks.forEach(task => {
+        if (!isRoutineTask(task)) {
+          result.push(task);
+          return;
+        }
+        const key = getDailyAiRoutineKey(task);
+        const existingIndex = routineIndexes.get(key);
+        if (existingIndex === undefined) {
+          routineIndexes.set(key, result.length);
+          result.push(task);
+          return;
+        }
+        const existingDate = result[existingIndex].date || '';
+        const candidateDate = task.date || '';
+        if ((candidateDate === dateKey && existingDate !== dateKey) || (existingDate !== dateKey && candidateDate > existingDate)) {
+          result[existingIndex] = task;
+        }
+      });
+      return result;
+    }
+
     function getDailyAiTasks(dateKey = toDateKey(new Date())) {
-      return state.tasks
-        .filter(task => isTaskActiveOnDate(task, dateKey))
-        .filter(task => task.status !== 'done')
-        .filter(task => !task.assignee || task.assignee === CURRENT_USER)
+      const tasks = state.tasks
+        .filter(task => !isUnassignedRecord(task))
+        .filter(task => task.assignee === CURRENT_USER)
+        .filter(task => isTaskActiveOnDate(task, dateKey));
+      return dedupeDailyAiRoutineTasks(tasks, dateKey)
         .sort((a, b) => {
           const timeA = getTaskStartHour(a.time);
           const timeB = getTaskStartHour(b.time);
