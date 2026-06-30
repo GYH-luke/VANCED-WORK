@@ -49,6 +49,7 @@ Read these when needed:
 - Do not report completion until the result has been checked against the user's actual problem. If verification fails, infer the likely root cause, patch again, and rerun verification.
 - Use only OTF files from `나눔스퀘어` when app fonts are needed; do not deploy TTF files unless explicitly requested.
 - Every GitHub upload must include the full Codex operating bundle, so work can continue from any PC with current context.
+- For code changes, summarize changed files, behavior, and verification after validation, then wait for explicit user confirmation before commit or push.
 
 ## Standard Workflow
 

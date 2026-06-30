@@ -41,6 +41,14 @@ If CSS changed, confirm the `Daily_Work_v24.css?v=...` cache query in `index.htm
 
 If behavior changed, check the local preview. For interaction changes such as drag/drop, dialog behavior, filters, or tab navigation, verify the interaction itself rather than only checking code.
 
+## Pre-Commit Confirmation
+
+For code changes, do not commit or push immediately after validation.
+
+1. Summarize what changed, including files, behavior, and verification performed.
+2. Ask the user for explicit confirmation to commit and push.
+3. Proceed with upload-folder sync, commit, and push only after that confirmation.
+
 ## Sync To Git Upload Folder
 
 Copy deploy files from `SOURCE_WORKSPACE` to `UPLOAD_WORKSPACE`:
@@ -59,7 +67,7 @@ Also sync the Codex operating bundle every time:
 - `PROJECT_MEMORY.md`
 - `AGENTS.md`
 
-Then run Git commands from `UPLOAD_WORKSPACE`:
+Then run Git commands from `UPLOAD_WORKSPACE`. Only run these commands after the pre-commit confirmation gate has passed for code changes.
 
 ```powershell
 git fetch origin

@@ -13,6 +13,7 @@ Use this file before modifying Vanced Work.
 - Read `docs/QUALITY_GATE.md` before final delivery.
 - For fonts, use OTF files from `나눔스퀘어`; do not deploy TTF files unless explicitly requested.
 - For every GitHub upload, include the full Codex operating bundle: `.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, and `AGENTS.md`.
+- After code changes are complete and validated, summarize what changed and wait for explicit user confirmation before any commit or push.
 
 ## Standard Work Loop
 
@@ -24,10 +25,11 @@ Use this file before modifying Vanced Work.
 6. Run the quality gate: if the result is not fully correct, infer the root cause, patch again, and repeat validation.
 7. Copy deploy files to `_github_upload_VANCED-WORK` when app deploy files changed.
 8. Copy the full Codex operating bundle to `_github_upload_VANCED-WORK` for every GitHub upload.
-9. Commit or amend in the upload folder when requested.
-10. Push or verify `Everything up-to-date`.
-11. Update memory, agents, subagents, skills, and markdown docs when project rules or durable decisions changed.
-12. Final response includes changed files, folders, local URL, and GitHub URL.
+9. Before commit or push, summarize the changed files, behavior, and verification for the user and wait for explicit confirmation.
+10. Commit or amend in the upload folder only after confirmation.
+11. Push or verify `Everything up-to-date` only after confirmation.
+12. Update memory, agents, subagents, skills, and markdown docs when project rules or durable decisions changed.
+13. Final response includes changed files, folders, local URL, and GitHub URL.
 
 ## File Ownership
 

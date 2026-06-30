@@ -10,6 +10,7 @@ Use this before final delivery.
 - [ ] Font deployment uses OTF files only when font assets changed.
 - [ ] JavaScript syntax validation passed when `index.html` changed.
 - [ ] Local preview checked when UI or interaction changed.
+- [ ] Code-change summary reported to the user before commit/push, and explicit user confirmation received.
 - [ ] Deploy files copied to `_github_upload_VANCED-WORK` when needed.
 - [ ] Full Codex operating bundle copied and staged for GitHub upload: `.codex/`, `agents/`, `docs/`, `MEMORY.md`, `PROJECT_MEMORY.md`, `AGENTS.md`.
 - [ ] New requested artifacts are inside the existing source folder unless explicitly requested otherwise.

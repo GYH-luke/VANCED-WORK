@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-06-30 09:58 KST
+Last updated: 2026-06-30 10:05 KST
 
 ## Project Identity
 
@@ -81,6 +81,7 @@ When giving the user final results, include clickable links to the actual folder
 - Keep final explanations concise and practical.
 - User is non-developer; explain operational choices plainly when asked.
 - After every requested change, self-check whether the fix fully solves the reported problem. If not, infer the exact likely cause, patch again, and rerun verification before saying the work is complete.
+- For code changes, after editing and validation but before any commit or push, summarize exactly what changed and wait for user confirmation. Do not commit or push code changes until the user confirms that summary.
 
 ## Firebase And Data Model
 
@@ -128,15 +129,16 @@ Rules:
 5. Validate inline JavaScript syntax in `index.html`.
 6. Verify UI behavior locally when the change touches layout or interaction.
 7. Run the `docs/QUALITY_GATE.md` self-audit. If anything fails, diagnose the likely root cause, patch again, and repeat validation.
-8. Copy deploy files to `UPLOAD_WORKSPACE`.
-9. Copy the full Codex operating bundle to `UPLOAD_WORKSPACE` for every GitHub upload, even when the user only changed app files.
-10. Commit and push from `UPLOAD_WORKSPACE` when requested.
-11. Update memory, agent, subagent, skill, and markdown documentation when rules, workflows, or product decisions changed.
-12. Final response includes changed files, folders, local URL, GitHub URL, and verification result.
+8. Summarize changed files, behavior, and verification for the user, then wait for explicit confirmation before any commit or push.
+9. Copy deploy files to `UPLOAD_WORKSPACE`.
+10. Copy the full Codex operating bundle to `UPLOAD_WORKSPACE` for every GitHub upload, even when the user only changed app files.
+11. Commit and push from `UPLOAD_WORKSPACE` only after the user confirms the pre-release summary.
+12. Update memory, agent, subagent, skill, and markdown documentation when rules, workflows, or product decisions changed.
+13. Final response includes changed files, folders, local URL, GitHub URL, and verification result.
 
 ## GitHub Workflow
 
-Use `UPLOAD_WORKSPACE` for Git operations:
+Use `UPLOAD_WORKSPACE` for Git operations. Before running `git commit` or `git push` for code changes, report what changed and the verification result to the user, then wait for explicit confirmation.
 
 ```powershell
 git fetch origin
