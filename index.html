@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 12:42 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 19:44 KST</span>
     </div>
   </footer>
 
@@ -5488,10 +5488,7 @@
     }
 
     function shouldShowDailyRoutineTask(task, start, end) {
-      if (!isRoutineTask(task)) return true;
-      if (!routineTaskRunsOnDate(task, task.date)) return false;
-      if (!isMultiDayRange(start, end)) return true;
-      return task.date === toDateKey(new Date());
+      return shouldShowRoutineTaskInRange(task, start, end);
     }
 
     function shouldShowRoutineTaskInRange(task, start, end) {
