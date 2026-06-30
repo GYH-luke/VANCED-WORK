@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 11:22 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 11:46 KST</span>
     </div>
   </footer>
 
@@ -7932,15 +7932,17 @@
       return `${month}/${day}`;
     }
 
-    function formatDailyAiTime(value) {
-      const time = formatTaskTime(value);
-      return time ? `${time} ` : '';
-    }
-
     function isTaskActiveOnDate(task, dateKey) {
       const start = task.date || dateKey;
       const end = task.endDate || task.deadline || start;
       return start <= dateKey && end >= dateKey;
+    }
+
+    function shouldIncludeTaskInDailyAi(task, dateKey) {
+      const week = getBusinessWeekRange(dateKey);
+      if (task.date < week.start || task.date > week.end) return false;
+      if (!isRoutineTask(task)) return isTaskActiveOnDate(task, dateKey);
+      return task.date === dateKey && routineTaskRunsOnDate(task, dateKey);
     }
 
     function getDailyAiRoutineKey(task) {
@@ -7978,7 +7980,7 @@
       const tasks = state.tasks
         .filter(task => !isUnassignedRecord(task))
         .filter(task => task.assignee === CURRENT_USER)
-        .filter(task => isTaskActiveOnDate(task, dateKey));
+        .filter(task => shouldIncludeTaskInDailyAi(task, dateKey));
       return dedupeDailyAiRoutineTasks(tasks, dateKey)
         .sort((a, b) => {
           const timeA = getTaskStartHour(a.time);
@@ -8020,7 +8022,7 @@
         .forEach(advertiser => {
           lines.push(`[${advertiser}]`);
           grouped.get(advertiser).forEach(task => {
-            lines.push(`• ${formatDailyAiTime(task.time)}${task.title}`.trim());
+            lines.push(`• ${task.title}`);
             String(task.memo || '')
               .split(/\r?\n/)
               .map(line => line.trim())
