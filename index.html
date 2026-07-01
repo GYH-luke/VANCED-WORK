@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-06-30 21:57 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-07-01 10:18 KST</span>
     </div>
   </footer>
 
@@ -5524,22 +5524,14 @@
       return Boolean(task?.isRoutine || task?.routineId);
     }
 
-    function isMultiDayRange(start, end) {
-      return Boolean(start && end && daysBetween(start, end) >= 1);
+    function isTodayRoutineTask(task, today = toDateKey(new Date())) {
+      return isRoutineTask(task) && task.date === today && routineTaskRunsOnDate(task, today);
     }
 
-    function shouldShowDailyRoutineTask(task, start, end) {
-      return shouldShowRoutineTaskInRange(task, start, end);
-    }
-
-    function shouldShowRoutineTaskInRange(task, start, end) {
+    function shouldShowDailyRoutineTask(task) {
       if (!isRoutineTask(task)) return true;
-      if (!routineTaskRunsOnDate(task, task.date)) return false;
-      if (!isMultiDayRange(start, end)) return true;
-      const routineDay = getTaskRoutineDay(task);
-      if (routineDay !== 'daily') return true;
-      // D2+ ranges: keep daily routines to one visible instance to avoid duplicates.
-      return task.date === start;
+      // Daily tab routines are anchored to the real current date, regardless of the date range filter.
+      return isTodayRoutineTask(task);
     }
 
     function getTaskOrderValue(task) {
@@ -5796,7 +5788,9 @@
     }
 
     function materializeRoutinesForWeek() {
-      getWeekDates().forEach(materializeRoutinesForDate);
+      const dates = new Set(getWeekDates());
+      if (state.view === 'daily') dates.add(toDateKey(new Date()));
+      dates.forEach(materializeRoutinesForDate);
     }
 
     function escapeHtml(value) {
@@ -5888,9 +5882,12 @@
           const q = state.filters.assigneeQuery.toLowerCase();
           if (!getUserDisplayName(task.assignee).toLowerCase().includes(q)) return false;
         }
+        const dailyRoutine = isRoutineTask(task);
         if (!shouldShowDailyRoutineTask(task, start, end)) return false;
-        if (start && task.date < start) return false;
-        if (end && task.date > end) return false;
+        if (!dailyRoutine) {
+          if (start && task.date < start) return false;
+          if (end && task.date > end) return false;
+        }
         return true;
       });
     }
@@ -5906,9 +5903,12 @@
         if (state.filters.type !== 'all' && task.type !== state.filters.type) return false;
         if (!matchesAssigneeFilter(task)) return false;
         const { start, end } = getFilterRange();
+        const dailyRoutine = state.view === 'daily' && isRoutineTask(task);
         if (state.view === 'daily' && !shouldShowDailyRoutineTask(task, start, end)) return false;
-        if (start && task.date < start) return false;
-        if (end && task.date > end) return false;
+        if (!dailyRoutine) {
+          if (start && task.date < start) return false;
+          if (end && task.date > end) return false;
+        }
         if (state.filters.hideDone && task.status === 'done') return false;
         return true;
       });
@@ -6254,13 +6254,11 @@
       const { start, end } = getFilterRange();
       const routineTasks = sortTasks(state.tasks.filter(task => {
         if (isUnassignedRecord(task)) return false;
-        if (!task.isRoutine) return false;
+        if (!isRoutineTask(task)) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
         if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
         if (!shouldShowDailyRoutineTask(task, start, end)) return false;
-        if (start && task.date < start) return false;
-        if (end && task.date > end) return false;
         return true;
       }));
       dom.routineSummary.textContent = '루틴 업무';
@@ -8082,7 +8080,8 @@
           if (ai !== -1 || bi !== -1) return (ai === -1 ? Number.MAX_SAFE_INTEGER : ai) - (bi === -1 ? Number.MAX_SAFE_INTEGER : bi);
           return a.localeCompare(b, 'ko', { numeric: true });
         })
-        .forEach(advertiser => {
+        .forEach((advertiser, index) => {
+          if (index > 0) lines.push('');
           lines.push(`[${advertiser}]`);
           grouped.get(advertiser).forEach(task => {
             lines.push(`• ${task.title}`);
