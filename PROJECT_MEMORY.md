@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-07-01 10:18 KST
+Last updated: 2026-07-01 11:44 KST
 
 ## Project Identity
 
@@ -55,6 +55,7 @@ When giving the user final results, include clickable links to the actual folder
 - Generated routine task IDs are deterministic per `routineId + date`, preventing concurrent tabs or devices from creating duplicate instances. Deleting a legacy duplicated routine instance removes every record for that same routine and date in one action, while ordinary tasks still delete individually.
 - Every view must suppress a routine task whose parent routine marks that task date in `skippedDates`, even if an older open tab or PC writes a stale task record back to Firebase. The tombstone is authoritative; a stale task record must never make the deleted occurrence visible again.
 - Daily table sorting supports stacked criteria. Clicking a sort header promotes it to the primary sort while preserving previous criteria as secondary sorts, such as start date ascending plus time ascending. Clicking an active sort header toggles ascending and descending in both directions.
+- When Daily tasks have the same start date and start time, sorting must place the earlier deadline date first, and when the deadline date also matches, the earlier end/deadline time first.
 - Changing a task start date keeps the existing end date when that end date is the same as or later than the new start date. Only an end date that would fall before the new start date is moved forward to match the new start date.
 - Daily AI uses the real current date and the current Monday-Friday business-week start-date range. It includes assigned non-routine tasks active today, including completed tasks, only when their start date is in that current work list. Routine tasks appear only for a valid instance whose start date is the real current date, with semantic duplicates collapsed to one. Unassigned tasks and task times are omitted from the output.
 - Daily AI output groups tasks by advertiser and inserts one blank line between advertiser groups for copy-ready readability.

@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-07-01 10:18 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-07-01 11:44 KST</span>
     </div>
   </footer>
 
@@ -5413,6 +5413,14 @@
       return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : 24 * 60 + 1;
     }
 
+    function getTaskEndHour(value) {
+      const normalized = normalizeTaskTime(value);
+      if (!normalized) return 24 * 60 + 1;
+      const [, endText = normalized.split('~')[0]] = normalized.split('~');
+      const [hour, minute] = endText.split(':').map(Number);
+      return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : 24 * 60 + 1;
+    }
+
     function formatTaskTime(value) {
       const normalized = normalizeTaskTime(value);
       if (!normalized) return '';
@@ -5930,12 +5938,30 @@
       return status === 'todo' ? 0 : status === 'doing' ? 1 : 2;
     }
 
+    function getTaskDeadlineDate(task) {
+      return task.deadline || task.endDate || task.date || '';
+    }
+
+    function compareTaskDeadlineMoment(a, b) {
+      const dateCompare = getTaskDeadlineDate(a).localeCompare(getTaskDeadlineDate(b));
+      if (dateCompare) return dateCompare;
+      return getTaskEndHour(a.time) - getTaskEndHour(b.time);
+    }
+
+    function compareDailyStartDeadlineTie(a, b) {
+      const startDateCompare = String(a.date || '').localeCompare(String(b.date || ''));
+      if (startDateCompare) return startDateCompare;
+      const startTimeCompare = getTaskStartHour(a.time) - getTaskStartHour(b.time);
+      if (startTimeCompare) return startTimeCompare;
+      return compareTaskDeadlineMoment(a, b);
+    }
+
     function sortFieldValue(task, field) {
       if (field === 'status') return statusScore(task.status);
       if (field === 'priority') return priorityScore(task.priority);
       if (field === 'type') return getTypeLabel(task.type);
       if (field === 'date') return task.date;
-      if (field === 'deadline') return task.deadline || task.endDate || task.date;
+      if (field === 'deadline') return getTaskDeadlineDate(task);
       if (field === 'time') return getTaskStartHour(task.time);
       if (field === 'manual') return getTaskOrderValue(task);
       if (field === 'advertiser') {
@@ -5946,6 +5972,7 @@
     }
 
     function compareField(a, b, field) {
+      if (field === 'deadline') return compareTaskDeadlineMoment(a, b);
       const av = sortFieldValue(a, field);
       const bv = sortFieldValue(b, field);
       if (typeof av === 'number' && typeof bv === 'number') return av - bv;
@@ -6004,6 +6031,8 @@
             const base = sort.field === 'manual' ? compareDailyManualOrder(a, b) : compareField(a, b, sort.field);
             if (base !== 0) return sort.direction === 'asc' ? base : -base;
           }
+          const deadlineTie = compareDailyStartDeadlineTie(a, b);
+          if (deadlineTie !== 0) return deadlineTie;
           return stableDailyCompare(a, b);
         }
         if (state.sortMode === 'priority') return priorityScore(a.priority) - priorityScore(b.priority) || a.title.localeCompare(b.title, 'ko');
