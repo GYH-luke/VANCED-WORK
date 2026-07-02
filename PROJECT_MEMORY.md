@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-07-02 08:55 KST
+Last updated: 2026-07-02 11:17 KST
 
 ## Project Identity
 
@@ -50,6 +50,7 @@ When giving the user final results, include clickable links to the actual folder
 - Weekly is fixed to business-week D5: Monday through Friday only. `Today` opens the current Monday-Friday range, and previous/next navigation moves by one calendar week.
 - Advertiser `Today` navigation should start at today by D7.
 - Weekly assignee columns stay compact, while focus columns use a wider layout with normal-weight 12px text and automatic vertical growth.
+- Editable Weekly focus fields include a strikethrough button. Selecting focus text and pressing it toggles strikethrough, persists the formatting through Firebase, preserves legacy plain-text focus values, and permits only sanitized strikethrough and line-break markup.
 - Routine tasks support `Daily`, `Weekly Mon` through `Weekly Fri` routine-day values. In the Daily tab, routine rows are anchored to the real current date and must remain visible for today's valid routine instances regardless of the selected date range filter.
 - Deleting one generated routine task instance records that date in the parent routine's `skippedDates` map, so `materializeRoutinesForDate` must not recreate the same instance on render, reload, or Firebase sync. Undoing the deletion clears that skipped date and restores the task.
 - Generated routine task IDs are deterministic per `routineId + date`, preventing concurrent tabs or devices from creating duplicate instances. Deleting a legacy duplicated routine instance removes every record for that same routine and date in one action, while ordinary tasks still delete individually.
@@ -69,6 +70,8 @@ When giving the user final results, include clickable links to the actual folder
 - Unassigned tasks and routines must not appear in any tab.
 - Weekly quick add defaults to the logged-in user unless the selected advertiser has existing tasks from other assignees.
 - Weekly advertiser filter has an `All advertisers` reset plus a multi-select button.
+- Weekly advertiser filters include a `My advertisers` mode between `All advertisers` and multi-select. It shows advertisers that contain at least one task assigned to the logged-in user within the currently filtered Monday-Friday week, while preserving all assignee rows inside those advertisers.
+- Weekly tab includes a `완료 숨김` toggle in the filter bar, matching the Daily tab control and hiding completed weekly cards when enabled.
 - Edit dialog includes a trash icon for deletion.
 - Daily advertiser sections have a plus button that opens an `Add task` dialog with advertiser prefilled.
 - Daily advertiser plus button should match the completion-check color and alignment.

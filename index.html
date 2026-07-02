@@ -4210,7 +4210,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2422" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2425" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4450,6 +4450,7 @@
         </div>
         <div class="adv-filter-bar weekly-filter-bar">
           <button type="button" class="filter-pill-select weekly-adv-all-btn" id="weeklyAdvAllBtn" data-action="clear-weekly-adv-filter" aria-pressed="true">전체 광고주</button>
+          <button type="button" class="filter-pill-select weekly-adv-mine-btn" id="weeklyAdvMineBtn" data-action="filter-my-weekly-advertisers" aria-pressed="false" title="선택 주간에 내 업무가 있는 광고주만 보기">내 광고주</button>
           <div class="assignee-ms" id="weeklyAdvFilterMs">
             <button type="button" class="filter-pill-select assignee-ms-trigger weekly-adv-select-btn" id="weeklyAdvFilterTrigger" data-action="toggle-weekly-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 선택</button>
             <div class="assignee-ms-panel" id="weeklyAdvFilterPanel" hidden></div>
@@ -4460,6 +4461,8 @@
             <button type="button" class="afg-btn" data-action="set-assignee-mode" data-mode="search">검색</button>
             <input type="text" class="afg-search" data-assignee-search placeholder="이름 검색..." hidden />
           </div>
+          <span class="fbar-sp weekly-filter-spacer"></span>
+          <label class="check weekly-hide-done-check"><input id="weeklyHideDone" type="checkbox" />완료 숨김</label>
         </div>
         <div class="weekly-scroll" style="margin-top:12px;">
           <div class="weekly-table" id="weeklyBoard"></div>
@@ -4499,7 +4502,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-07-02 08:55 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-07-02 11:11 KST</span>
     </div>
   </footer>
 
@@ -5000,7 +5003,7 @@
           key: activeFocusInput.dataset.assignee
             ? `${activeFocusInput.dataset.advertiser}__${activeFocusInput.dataset.assignee}`
             : activeFocusInput.dataset.advertiser,
-          value: activeFocusInput.value
+          value: getWeeklyFocusStorageValue(activeFocusInput)
         } : null;
         const incoming = normalizeWorkspaceSnapshot(snap.val());
         const repairedRoutineTaskCount = applyWorkspaceSnapshot(incoming);
@@ -5154,6 +5157,7 @@
       },
       advertiserFilter: [],
       weeklyAdvertiserFilter: [],
+      weeklyAdvertiserFilterMode: 'all',
       sortMode: 'smart',
       tableSort: { field: 'time', direction: 'asc' },
       tableSorts: [{ field: 'time', direction: 'asc' }],
@@ -5180,9 +5184,9 @@
       [
         'importInput', 'main', 'viewTitle', 'viewSubtitle', 'periodDateNav', 'periodBadge', 'periodPresetMenu', 'selectedStartDateInput', 'selectedEndDateInput', 'themeToggle', 'themeIcon',
         'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine', 'taskRoutineDay',
-        'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone',
+        'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone', 'weeklyHideDone',
         'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'dailyAdvertiserGroupToggle', 'weeklyBoard',
-        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
+        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvMineBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
         'taskDialog', 'dialogTitle', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editRoutineDay', 'editDeleteBtn', 'editSubmitBtn',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
         'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'historyDialog', 'historyStatus', 'historyList', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
@@ -6104,15 +6108,51 @@
 
     function viewTasks() {
       const base = getBaseTasks();
-      return sortTasks(state.view === 'daily' ? applyFilters(base) : base);
+      const filtered = state.view === 'daily'
+        ? applyFilters(base)
+        : state.view === 'weekly' && state.filters.hideDone
+          ? base.filter(task => task.status !== 'done')
+          : base;
+      return sortTasks(filtered);
     }
 
     function weeklyFocusKey(advertiser) {
       return `${state.weekStart}::${advertiser}`;
     }
 
+    function sanitizeWeeklyFocusHtml(value) {
+      const template = document.createElement('template');
+      template.innerHTML = String(value || '');
+      const serialize = node => {
+        if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.nodeValue || '');
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const tag = node.tagName.toUpperCase();
+        if (tag === 'SCRIPT' || tag === 'STYLE') return '';
+        if (tag === 'BR') return '<br>';
+        const inner = Array.from(node.childNodes).map(serialize).join('');
+        if (tag === 'S' || tag === 'STRIKE' || tag === 'DEL') return `<s>${inner}</s>`;
+        if (tag === 'DIV' || tag === 'P') return `<br>${inner}<br>`;
+        return inner;
+      };
+      return Array.from(template.content.childNodes)
+        .map(serialize)
+        .join('')
+        .replace(/(?:<br>){3,}/g, '<br><br>')
+        .replace(/^(?:<br>)+|(?:<br>)+$/g, '');
+    }
+
+    function weeklyFocusValueToHtml(value) {
+      if (value && typeof value === 'object') return sanitizeWeeklyFocusHtml(value.html || '');
+      return escapeHtml(String(value || '')).replace(/\r?\n/g, '<br>');
+    }
+
     function getWeeklyFocus(advertiser) {
-      return state.weeklyFocus[weeklyFocusKey(advertiser)] || '';
+      return weeklyFocusValueToHtml(state.weeklyFocus[weeklyFocusKey(advertiser)] || '');
+    }
+
+    function getWeeklyFocusStorageValue(field) {
+      const html = sanitizeWeeklyFocusHtml(field?.innerHTML || '');
+      return html ? { html } : '';
     }
 
     function setWeeklyFocus(advertiser, value, { sync = false } = {}) {
@@ -6124,7 +6164,8 @@
     function resizeWeeklyFocusField(field) {
       if (!field?.matches?.('[data-focus-input]')) return;
       field.style.height = 'auto';
-      const parentMinimum = Math.max(98, (field.parentElement?.clientHeight || 118) - 20);
+      const toolbarHeight = field.parentElement?.querySelector('.weekly-focus-toolbar')?.offsetHeight || 0;
+      const parentMinimum = Math.max(98, (field.parentElement?.clientHeight || 118) - toolbarHeight - 26);
       field.style.height = `${Math.max(parentMinimum, field.scrollHeight)}px`;
     }
 
@@ -6133,6 +6174,26 @@
       requestAnimationFrame(() => {
         qsa('[data-focus-input]', dom.weeklyBoard).forEach(resizeWeeklyFocusField);
       });
+    }
+
+    function toggleWeeklyFocusStrike(button) {
+      const field = button?.closest('.weekly-focus-wrap')?.querySelector('[data-focus-input]');
+      if (!field || field.getAttribute('contenteditable') !== 'true') return;
+      const selection = window.getSelection();
+      if (!selection?.rangeCount || selection.isCollapsed || !field.contains(selection.anchorNode) || !field.contains(selection.focusNode)) {
+        showToast('취소선을 적용할 중점업무 텍스트를 드래그해 선택해 주세요.');
+        field.focus();
+        return;
+      }
+      document.execCommand('strikeThrough', false, null);
+      const sanitized = sanitizeWeeklyFocusHtml(field.innerHTML);
+      if (field.innerHTML !== sanitized) field.innerHTML = sanitized;
+      const focusKey = field.dataset.assignee
+        ? `${field.dataset.advertiser}__${field.dataset.assignee}`
+        : field.dataset.advertiser;
+      setWeeklyFocus(focusKey, getWeeklyFocusStorageValue(field), { sync: true });
+      resizeWeeklyFocusField(field);
+      logHistory('WEEKLY_FOCUS', `"${field.dataset.advertiser}" 중점업무 취소선을 변경했습니다`);
     }
 
     function applyTheme(theme, persist = true) {
@@ -6253,6 +6314,7 @@
       dom.filterStatus.value = state.filters.status;
       dom.filterPriority.value = state.filters.priority;
       dom.hideDone.checked = state.filters.hideDone;
+      if (dom.weeklyHideDone) dom.weeklyHideDone.checked = state.filters.hideDone;
       syncAssigneeFilterUI();
       if (dom.userBadgeName && CURRENT_USER) {
         const u = USERS.find(x => x.id === CURRENT_USER);
@@ -6623,10 +6685,27 @@
       `;
     }
 
+    function getWeeklyAdvertisersForMode(allAdvertisers, weeklyTasks, visibleTasks) {
+      if (state.weeklyAdvertiserFilterMode === 'mine') {
+        const myAdvertisers = new Set(weeklyTasks
+          .filter(task => task.assignee === CURRENT_USER)
+          .map(task => task.advertiser));
+        return allAdvertisers.filter(name => myAdvertisers.has(name));
+      }
+      if (state.weeklyAdvertiserFilterMode === 'selected') {
+        return allAdvertisers.filter(name => state.weeklyAdvertiserFilter.includes(name));
+      }
+      return getAdvertisers(visibleTasks).filter(name => name !== '공통 루틴');
+    }
+
     function renderWeekly() {
-      const tasks = viewTasks().filter(task => !isUnassignedRecord(task) && matchesAssigneeFilter(task));
+      const weeklyTasks = viewTasks().filter(task => !isUnassignedRecord(task));
+      const tasks = weeklyTasks.filter(matchesAssigneeFilter);
       const weekDates = getWeekDates();
       const allAdvertisers = getSelectableAdvertisers();
+      if (state.weeklyAdvertiserFilterMode === 'selected' && !state.weeklyAdvertiserFilter.length) {
+        state.weeklyAdvertiserFilterMode = 'all';
+      }
       if (dom.weeklyAdvFilterPanel) {
         dom.weeklyAdvFilterPanel.innerHTML = allAdvertisers.length
           ? allAdvertisers.map(advertiser => `<label class="assignee-ms-item"><input type="checkbox" data-weekly-adv-filter="${escapeHtml(advertiser)}" ${state.weeklyAdvertiserFilter.includes(advertiser) ? 'checked' : ''} /><span>${escapeHtml(advertiser)}</span></label>`).join('')
@@ -6638,13 +6717,16 @@
           : '광고주 선택';
       }
       if (dom.weeklyAdvAllBtn) {
-        const isAllAdvertisers = state.weeklyAdvertiserFilter.length === 0;
+        const isAllAdvertisers = state.weeklyAdvertiserFilterMode === 'all';
         dom.weeklyAdvAllBtn.classList.toggle('active', isAllAdvertisers);
         dom.weeklyAdvAllBtn.setAttribute('aria-pressed', String(isAllAdvertisers));
       }
-      let advertisers = state.weeklyAdvertiserFilter.length
-        ? allAdvertisers.filter(name => state.weeklyAdvertiserFilter.includes(name))
-        : getAdvertisers(tasks).filter(name => name !== '공통 루틴');
+      if (dom.weeklyAdvMineBtn) {
+        const isMyAdvertisers = state.weeklyAdvertiserFilterMode === 'mine';
+        dom.weeklyAdvMineBtn.classList.toggle('active', isMyAdvertisers);
+        dom.weeklyAdvMineBtn.setAttribute('aria-pressed', String(isMyAdvertisers));
+      }
+      const advertisers = getWeeklyAdvertisersForMode(allAdvertisers, weeklyTasks, tasks);
 
       const header = `
         <div class="weekly-head">
@@ -6693,7 +6775,8 @@
             </div>`;
           const focusCell = `
             <div class="weekly-focus-wrap" style="grid-column:2;grid-row:1 / span ${laneCount};">
-              <textarea class="focus-field" data-focus-input data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id || ''}" placeholder="중점업무 입력"${isReadonly ? ' readonly title="타인의 중점업무는 수정할 수 없습니다"' : ''}>${escapeHtml(getWeeklyFocus(focusKey))}</textarea>
+              ${isReadonly ? '' : `<div class="weekly-focus-toolbar"><button type="button" class="weekly-focus-strike-btn" data-action="toggle-weekly-focus-strike" aria-label="선택 텍스트 취소선" title="선택 텍스트 취소선"><span aria-hidden="true">S</span></button></div>`}
+              <div class="focus-field" data-focus-input data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id || ''}" data-placeholder="중점업무 입력" role="textbox" aria-multiline="true" contenteditable="${isReadonly ? 'false' : 'true'}"${isReadonly ? ' aria-readonly="true" title="타인의 중점업무는 수정할 수 없습니다"' : ''}>${getWeeklyFocus(focusKey)}</div>
             </div>`;
           const dayCells = weekDates.map((date, dayIndex) => `
             <div class="weekly-cell weekly-day-bg${isReadonly ? ' is-readonly' : ''}"${isReadonly ? ' aria-disabled="true"' : ' data-dropzone'} data-date="${date}" data-day-index="${dayIndex}" data-advertiser="${escapeHtml(advertiser)}" data-assignee="${g.id}" style="grid-column:${dayIndex + 3};grid-row:1 / span ${laneCount};" aria-label="${formatWeekHeaderDate(date)} 업무 추가"></div>`).join('');
@@ -8534,6 +8617,10 @@
       }
 
       document.addEventListener('pointerdown', event => {
+        if (event.target.closest('[data-action="toggle-weekly-focus-strike"]')) {
+          event.preventDefault();
+          return;
+        }
         const dailyHandle = event.target.closest('[data-daily-drag-handle]');
         if (dailyHandle) {
           beginDailyPointerDrag(event, dailyHandle);
@@ -8709,6 +8796,7 @@
           if (routineId) deleteRoutine(routineId);
           else deleteTask(target.dataset.taskId);
         }
+        if (action === 'toggle-weekly-focus-strike') { toggleWeeklyFocusStrike(target); return; }
         if (action === 'logout') { logout(); return; }
         const isReadonly = target.closest('.is-readonly');
         if (action === 'delete-task') { if (!isReadonly) deleteTask(target.dataset.taskId, target); return; }
@@ -8729,6 +8817,15 @@
         }
         if (action === 'clear-weekly-adv-filter') {
           state.weeklyAdvertiserFilter = [];
+          state.weeklyAdvertiserFilterMode = 'all';
+          if (dom.weeklyAdvFilterPanel) dom.weeklyAdvFilterPanel.hidden = true;
+          if (dom.weeklyAdvFilterTrigger) dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
+          renderWeekly();
+          return;
+        }
+        if (action === 'filter-my-weekly-advertisers') {
+          state.weeklyAdvertiserFilter = [];
+          state.weeklyAdvertiserFilterMode = 'mine';
           if (dom.weeklyAdvFilterPanel) dom.weeklyAdvFilterPanel.hidden = true;
           if (dom.weeklyAdvFilterTrigger) dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
           renderWeekly();
@@ -8769,6 +8866,7 @@
           } else {
             state.weeklyAdvertiserFilter = state.weeklyAdvertiserFilter.filter(name => name !== advertiser);
           }
+          state.weeklyAdvertiserFilterMode = state.weeklyAdvertiserFilter.length ? 'selected' : 'all';
           renderWeekly();
           return;
         }
@@ -8937,22 +9035,32 @@
       document.addEventListener('input', event => {
         const target = event.target.closest('[data-focus-input]');
         if (!target) return;
-        if (target.readOnly || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
+        if (target.getAttribute('contenteditable') !== 'true' || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
         resizeWeeklyFocusField(target);
         const focusKey = target.dataset.assignee
           ? `${target.dataset.advertiser}__${target.dataset.assignee}`
           : target.dataset.advertiser;
-        setWeeklyFocus(focusKey, target.value);
+        setWeeklyFocus(focusKey, getWeeklyFocusStorageValue(target));
       });
 
-      document.addEventListener('change', event => {
+      document.addEventListener('paste', event => {
         const target = event.target.closest('[data-focus-input]');
         if (!target) return;
-        if (target.readOnly || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
+        if (target.getAttribute('contenteditable') !== 'true' || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
+        event.preventDefault();
+        document.execCommand('insertText', false, event.clipboardData?.getData('text/plain') || '');
+      });
+
+      document.addEventListener('focusout', event => {
+        const target = event.target.closest('[data-focus-input]');
+        if (!target) return;
+        if (target.getAttribute('contenteditable') !== 'true' || (target.dataset.assignee && !canEditAssignee(target.dataset.assignee))) return;
         const focusKey = target.dataset.assignee
           ? `${target.dataset.advertiser}__${target.dataset.assignee}`
           : target.dataset.advertiser;
-        setWeeklyFocus(focusKey, target.value, { sync: true });
+        const sanitized = sanitizeWeeklyFocusHtml(target.innerHTML);
+        if (target.innerHTML !== sanitized) target.innerHTML = sanitized;
+        setWeeklyFocus(focusKey, getWeeklyFocusStorageValue(target), { sync: true });
         logHistory('WEEKLY_FOCUS', `"${target.dataset.advertiser}" 중점업무를 수정했습니다`);
       });
 
@@ -9174,6 +9282,7 @@
       dom.filterStatus.addEventListener('change', event => { state.filters.status = event.target.value; render(); });
       dom.filterPriority.addEventListener('change', event => { state.filters.priority = event.target.value; render(); });
       dom.hideDone.addEventListener('change', event => { state.filters.hideDone = event.target.checked; render(); });
+      if (dom.weeklyHideDone) dom.weeklyHideDone.addEventListener('change', event => { state.filters.hideDone = event.target.checked; render(); });
       document.addEventListener('keydown', event => {
         const manualDateInput = event.target.closest('[data-action="change-inline-date-text"]');
         if (!manualDateInput) return;
