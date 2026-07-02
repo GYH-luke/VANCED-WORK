@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-07-01 11:44 KST
+Last updated: 2026-07-02 08:55 KST
 
 ## Project Identity
 
@@ -53,6 +53,7 @@ When giving the user final results, include clickable links to the actual folder
 - Routine tasks support `Daily`, `Weekly Mon` through `Weekly Fri` routine-day values. In the Daily tab, routine rows are anchored to the real current date and must remain visible for today's valid routine instances regardless of the selected date range filter.
 - Deleting one generated routine task instance records that date in the parent routine's `skippedDates` map, so `materializeRoutinesForDate` must not recreate the same instance on render, reload, or Firebase sync. Undoing the deletion clears that skipped date and restores the task.
 - Generated routine task IDs are deterministic per `routineId + date`, preventing concurrent tabs or devices from creating duplicate instances. Deleting a legacy duplicated routine instance removes every record for that same routine and date in one action, while ordinary tasks still delete individually.
+- Firebase snapshots, local cache loads, and saves automatically collapse legacy routine task duplicates with the same `routineId + date`. The survivor preserves the most advanced status first, then the most recently updated record; ordinary tasks and routine instances on different dates are never merged.
 - Every view must suppress a routine task whose parent routine marks that task date in `skippedDates`, even if an older open tab or PC writes a stale task record back to Firebase. The tombstone is authoritative; a stale task record must never make the deleted occurrence visible again.
 - Daily table sorting supports stacked criteria. Clicking a sort header promotes it to the primary sort while preserving previous criteria as secondary sorts, such as start date ascending plus time ascending. Clicking an active sort header toggles ascending and descending in both directions.
 - When Daily tasks have the same start date and start time, sorting must place the earlier deadline date first, and when the deadline date also matches, the earlier end/deadline time first.

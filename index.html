@@ -4499,7 +4499,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-07-01 11:44 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-07-02 08:55 KST</span>
     </div>
   </footer>
 
@@ -4787,6 +4787,51 @@
       return Object.fromEntries(items.filter(item => item?.id).map(item => [item.id, item]));
     }
 
+    function chooseRoutineTaskInstance(a, b) {
+      const statusRank = { todo: 0, doing: 1, done: 2 };
+      const statusDiff = (statusRank[a.status] ?? 0) - (statusRank[b.status] ?? 0);
+      if (statusDiff) return statusDiff > 0 ? a : b;
+
+      const updatedA = Date.parse(a.updatedAt || '') || 0;
+      const updatedB = Date.parse(b.updatedAt || '') || 0;
+      if (updatedA !== updatedB) return updatedA > updatedB ? a : b;
+
+      const expectedId = getRoutineTaskInstanceId(a.routineId, a.date);
+      if (a.id === expectedId || b.id === expectedId) return a.id === expectedId ? a : b;
+
+      const createdA = Date.parse(a.createdAt || '') || Number.MAX_SAFE_INTEGER;
+      const createdB = Date.parse(b.createdAt || '') || Number.MAX_SAFE_INTEGER;
+      if (createdA !== createdB) return createdA < createdB ? a : b;
+      return String(a.id).localeCompare(String(b.id), 'ko') <= 0 ? a : b;
+    }
+
+    function collapseDuplicateRoutineTaskInstances() {
+      const occurrenceIndexes = new Map();
+      const deduplicated = [];
+      let removedCount = 0;
+
+      state.tasks.forEach(task => {
+        if (!task.routineId || !isDateKey(task.date)) {
+          deduplicated.push(task);
+          return;
+        }
+
+        const key = `${task.routineId}\u0000${task.date}`;
+        const existingIndex = occurrenceIndexes.get(key);
+        if (existingIndex === undefined) {
+          occurrenceIndexes.set(key, deduplicated.length);
+          deduplicated.push(task);
+          return;
+        }
+
+        deduplicated[existingIndex] = chooseRoutineTaskInstance(deduplicated[existingIndex], task);
+        removedCount += 1;
+      });
+
+      if (removedCount) state.tasks = deduplicated;
+      return removedCount;
+    }
+
     function workspaceFromState() {
       return {
         tasks: recordsById(state.tasks.filter(task => !isUnassignedRecord(task))),
@@ -4836,6 +4881,7 @@
       state.routines = Object.values(snapshot.routines).map(normalizeRoutine).filter(routine => !isUnassignedRecord(routine));
       state.weeklyFocus = { ...snapshot.weeklyFocus };
       state.advertisers = [...snapshot.advertisers];
+      return collapseDuplicateRoutineTaskInstances();
     }
 
     function mergeWorkspaceSnapshots(local, remote) {
@@ -4890,17 +4936,18 @@
     }
 
     function syncWorkspaceChanges() {
-      if (!_workspaceReady || !CURRENT_USER || !CURRENT_UID || !_lastWorkspaceSnapshot) return;
+      if (!_workspaceReady || !CURRENT_USER || !CURRENT_UID || !_lastWorkspaceSnapshot) return Promise.resolve(false);
       const previous = _lastWorkspaceSnapshot;
       const next = workspaceFromState();
       const updates = addWorkspaceUpdateMeta(buildWorkspaceUpdates(previous, next));
-      if (!Object.keys(updates).length) return;
+      if (!Object.keys(updates).length) return Promise.resolve(false);
       _lastWorkspaceSnapshot = next;
-      workspaceRef.update(updates).catch(error => {
+      return workspaceRef.update(updates).then(() => true).catch(error => {
         console.error('[RTDB] workspace save error:', error);
         _lastWorkspaceSnapshot = previous;
         showToast('클라우드 저장에 실패했습니다. 연결을 확인하고 다시 시도합니다.');
         scheduleWorkspaceRetry();
+        return false;
       });
     }
 
@@ -4936,10 +4983,14 @@
         }
       }
 
-      applyWorkspaceSnapshot(initial);
+      const repairedRoutineTaskCount = applyWorkspaceSnapshot(initial);
       _lastWorkspaceSnapshot = initial;
       _workspaceReady = true;
       persistLocalCache();
+      if (repairedRoutineTaskCount) {
+        console.info(`[Routine repair] Removed ${repairedRoutineTaskCount} duplicate task instances.`);
+        await syncWorkspaceChanges();
+      }
 
       _rtdbListener = workspaceRef.on('value', snap => {
         const activeFocusInput = document.activeElement?.matches?.('[data-focus-input]')
@@ -4952,8 +5003,12 @@
           value: activeFocusInput.value
         } : null;
         const incoming = normalizeWorkspaceSnapshot(snap.val());
-        applyWorkspaceSnapshot(incoming);
+        const repairedRoutineTaskCount = applyWorkspaceSnapshot(incoming);
         _lastWorkspaceSnapshot = incoming;
+        if (repairedRoutineTaskCount) {
+          console.info(`[Routine repair] Removed ${repairedRoutineTaskCount} duplicate task instances.`);
+          syncWorkspaceChanges();
+        }
         if (activeFocusDraft) {
           state.weeklyFocus[weeklyFocusKey(activeFocusDraft.key)] = activeFocusDraft.value;
           persistLocalCache();
@@ -5645,6 +5700,7 @@
           const linkedTask = state.tasks.find(task => task.routineId === routine.id && task.assignee);
           if (linkedTask) routine.assignee = linkedTask.assignee;
         });
+        collapseDuplicateRoutineTaskInstances();
         state.weeklyFocus = JSON.parse(savedWeeklyFocus || '{}');
         if (savedAdvertisers) {
           state.advertisers = JSON.parse(savedAdvertisers).filter(name => name !== '공통 루틴');
@@ -5699,6 +5755,7 @@
     function save() {
       state.tasks = state.tasks.filter(task => !isUnassignedRecord(task));
       state.routines = state.routines.filter(routine => !isUnassignedRecord(routine));
+      collapseDuplicateRoutineTaskInstances();
       state.advertisers = state.advertisers
         .map(normalizeAdvertiserName)
         .filter((name, index, list) => name && !isCommonRoutineAdvertiser(name) && list.indexOf(name) === index);
