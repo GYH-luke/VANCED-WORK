@@ -1,6 +1,6 @@
 # Vanced Work Project Memory
 
-Last updated: 2026-07-02 11:17 KST
+Last updated: 2026-07-02 11:30 KST
 
 ## Project Identity
 
@@ -69,9 +69,10 @@ When giving the user final results, include clickable links to the actual folder
 - Daily delete undo popup appears beside the affected task.
 - Unassigned tasks and routines must not appear in any tab.
 - Weekly quick add defaults to the logged-in user unless the selected advertiser has existing tasks from other assignees.
-- Weekly advertiser filter has an `All advertisers` reset plus a multi-select button.
-- Weekly advertiser filters include a `My advertisers` mode between `All advertisers` and multi-select. It shows advertisers that contain at least one task assigned to the logged-in user within the currently filtered Monday-Friday week, while preserving all assignee rows inside those advertisers.
+- Daily and Weekly filter bars share the left-side order: `전체 광고주`, `광고주 선택`, `담당자 전체`, `나`, `검색`.
+- Daily and Weekly advertiser filters use a multi-select `광고주 선택` dropdown plus an `전체 광고주` reset button.
 - Weekly tab includes a `완료 숨김` toggle in the filter bar, matching the Daily tab control and hiding completed weekly cards when enabled.
+- Weekly advertiser `내 광고주` mode was removed; use `전체 광고주` or selected advertiser filters instead.
 - Edit dialog includes a trash icon for deletion.
 - Daily advertiser sections have a plus button that opens an `Add task` dialog with advertiser prefilled.
 - Daily advertiser plus button should match the completion-check color and alignment.

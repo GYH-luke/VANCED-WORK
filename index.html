@@ -4210,7 +4210,7 @@
 
 
   </style>
-  <link rel="stylesheet" href="Daily_Work_v24.css?v=2425" />
+  <link rel="stylesheet" href="Daily_Work_v24.css?v=2426" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -4390,13 +4390,11 @@
           </div>
         </div>
         <div class="daily-filter-bar">
-          <select id="filterAdvertiser" class="filter-pill-select" aria-label="광고주 필터"></select>
-          <select id="filterStatus" class="filter-pill-select status-filter-select" aria-label="상태 필터">
-            <option value="all">상태값 전체</option>
-            <option value="todo">시작전</option>
-            <option value="doing">진행중</option>
-            <option value="done">완료</option>
-          </select>
+          <button type="button" class="filter-pill-select daily-adv-all-btn" id="dailyAdvAllBtn" data-action="clear-daily-adv-filter" aria-pressed="true">전체 광고주</button>
+          <div class="assignee-ms" id="dailyAdvFilterMs">
+            <button type="button" class="filter-pill-select assignee-ms-trigger daily-adv-select-btn" id="dailyAdvFilterTrigger" data-action="toggle-daily-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 선택</button>
+            <div class="assignee-ms-panel" id="dailyAdvFilterPanel" hidden></div>
+          </div>
           <div class="status-dropbar" id="dailyDropbar" aria-label="상태별 업무 개수" hidden></div>
           <div class="assignee-filter-group" id="assigneeFilterGroup" data-assignee-filter-group>
             <button type="button" class="afg-btn active" id="afgAll" data-action="set-assignee-mode" data-mode="all">담당자 전체</button>
@@ -4409,6 +4407,12 @@
           <span class="fbar-sp"></span>
           <div class="daily-filter-extra">
             <button class="btn daily-ai-btn" type="button" data-action="open-daily-ai">daily ai</button>
+            <select id="filterStatus" class="filter-pill-select status-filter-select" aria-label="상태 필터">
+              <option value="all">상태값 전체</option>
+              <option value="todo">시작전</option>
+              <option value="doing">진행중</option>
+              <option value="done">완료</option>
+            </select>
             <select id="filterPriority" class="filter-pill-select" aria-label="우선순위 필터">
               <option value="all">우선순위 전체</option>
               <option value="normal">기본</option>
@@ -4450,7 +4454,6 @@
         </div>
         <div class="adv-filter-bar weekly-filter-bar">
           <button type="button" class="filter-pill-select weekly-adv-all-btn" id="weeklyAdvAllBtn" data-action="clear-weekly-adv-filter" aria-pressed="true">전체 광고주</button>
-          <button type="button" class="filter-pill-select weekly-adv-mine-btn" id="weeklyAdvMineBtn" data-action="filter-my-weekly-advertisers" aria-pressed="false" title="선택 주간에 내 업무가 있는 광고주만 보기">내 광고주</button>
           <div class="assignee-ms" id="weeklyAdvFilterMs">
             <button type="button" class="filter-pill-select assignee-ms-trigger weekly-adv-select-btn" id="weeklyAdvFilterTrigger" data-action="toggle-weekly-adv-filter" aria-haspopup="true" aria-expanded="false">광고주 선택</button>
             <div class="assignee-ms-panel" id="weeklyAdvFilterPanel" hidden></div>
@@ -4462,7 +4465,10 @@
             <input type="text" class="afg-search" data-assignee-search placeholder="이름 검색..." hidden />
           </div>
           <span class="fbar-sp weekly-filter-spacer"></span>
-          <label class="check weekly-hide-done-check"><input id="weeklyHideDone" type="checkbox" />완료 숨김</label>
+          <div class="weekly-filter-extra">
+            <label class="check weekly-hide-done-check"><input id="weeklyHideDone" type="checkbox" />완료 숨김</label>
+            <button class="btn" type="button" data-action="reset-filters">초기화</button>
+          </div>
         </div>
         <div class="weekly-scroll" style="margin-top:12px;">
           <div class="weekly-table" id="weeklyBoard"></div>
@@ -4502,7 +4508,7 @@
     <div class="app-footer-inner">
       <span class="footer-signature">Made by <strong>Luke</strong></span>
       <span class="footer-divider" aria-hidden="true">•</span>
-      <span class="footer-updated" id="footerUpdated">Updated 2026-07-02 11:11 KST</span>
+      <span class="footer-updated" id="footerUpdated">Updated 2026-07-02 11:30 KST</span>
     </div>
   </footer>
 
@@ -5146,6 +5152,7 @@
       filters: {
         query: '',
         advertiser: 'all',
+        advertisers: [],
         status: 'all',
         priority: 'all',
         type: 'all',
@@ -5184,9 +5191,9 @@
       [
         'importInput', 'main', 'viewTitle', 'viewSubtitle', 'periodDateNav', 'periodBadge', 'periodPresetMenu', 'selectedStartDateInput', 'selectedEndDateInput', 'themeToggle', 'themeIcon',
         'taskForm', 'taskTitle', 'taskAdvertiser', 'taskAdvertiserSuggest', 'taskPriority', 'taskDate', 'taskTime', 'taskStatus', 'taskMemo', 'taskRoutine', 'taskRoutineDay',
-        'advertiserList', 'stats', 'searchInput', 'filterAdvertiser', 'filterStatus', 'filterPriority', 'hideDone', 'weeklyHideDone',
+        'advertiserList', 'stats', 'searchInput', 'dailyAdvAllBtn', 'dailyAdvFilterTrigger', 'dailyAdvFilterPanel', 'filterStatus', 'filterPriority', 'hideDone', 'weeklyHideDone',
         'dailyView', 'weeklyView', 'advertiserView', 'dailyDropbar', 'dailyList', 'dailyAdvertiserGroupToggle', 'weeklyBoard',
-        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvMineBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
+        'advertiserBoard', 'newAdvertiserInput', 'advFilterTrigger', 'advFilterPanel', 'weeklyAdvAllBtn', 'weeklyAdvFilterTrigger', 'weeklyAdvFilterPanel', 'weeklyQuickAdd', 'wqaTitle', 'wqaLabel', 'wqaSubmit', 'wqaCancel',
         'taskDialog', 'dialogTitle', 'editForm', 'editTitle', 'editAdvertiser', 'editDate', 'editDeadline', 'editTime', 'editPriority', 'editRoutineDay', 'editDeleteBtn', 'editSubmitBtn',
         'advertiserDialog', 'advertiserForm', 'advertiserDialogInput', 'advertiserPicker', 'advertiserPickerList',
         'editStatus', 'editMemo', 'confirmDialog', 'confirmTitle', 'confirmMessage', 'confirmActionBtn', 'historyDialog', 'historyStatus', 'historyList', 'dailyAiDialog', 'dailyAiText', 'dailyAiCopyBtn', 'toast', 'toastText', 'toastAction',
@@ -5902,6 +5909,32 @@
       return getAdvertisers(tasks).filter(name => name !== '공통 루틴');
     }
 
+    function getDailyAdvertiserFilter() {
+      const selected = Array.isArray(state.filters.advertisers) ? state.filters.advertisers : [];
+      if (selected.length) return selected;
+      const legacy = state.filters.advertiser;
+      return legacy && legacy !== 'all' ? [legacy] : [];
+    }
+
+    function setDailyAdvertiserFilter(advertisers = []) {
+      const seen = new Set();
+      const selected = [];
+      advertisers.forEach(name => {
+        name = normalizeAdvertiserName(name);
+        if (!name || isCommonRoutineAdvertiser(name) || seen.has(name)) return;
+        seen.add(name);
+        selected.push(name);
+      });
+      state.filters.advertisers = selected;
+      state.filters.advertiser = selected.length === 1 ? selected[0] : 'all';
+      return selected;
+    }
+
+    function syncDailyAdvertiserFilterOptions(validAdvertisers = getSelectableAdvertisers()) {
+      const valid = new Set(validAdvertisers);
+      return setDailyAdvertiserFilter(getDailyAdvertiserFilter().filter(name => valid.has(name)));
+    }
+
     function setAdvertiserOrder(names) {
       const existing = getAdvertisers();
       const ordered = [];
@@ -5939,11 +5972,12 @@
 
     function getDailyStatusSummaryTasks() {
       const query = state.filters.query.trim().toLowerCase();
+      const advertiserFilter = getDailyAdvertiserFilter();
       const { start, end } = getFilterRange();
       return state.tasks.filter(task => {
         if (isUnassignedRecord(task)) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
-        if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
+        if (advertiserFilter.length && !advertiserFilter.includes(task.advertiser)) return false;
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
         if (state.filters.type !== 'all' && task.type !== state.filters.type) return false;
         if (state.filters.assignee === 'me' && task.assignee !== CURRENT_USER) return false;
@@ -5963,10 +5997,11 @@
 
     function applyFilters(tasks) {
       const query = state.filters.query.trim().toLowerCase();
+      const advertiserFilter = getDailyAdvertiserFilter();
       return tasks.filter(task => {
         if (isUnassignedRecord(task)) return false;
         if (query && !`${task.title} ${task.memo} ${task.advertiser}`.toLowerCase().includes(query)) return false;
-        if (state.filters.advertiser !== 'all' && task.advertiser !== state.filters.advertiser) return false;
+        if (advertiserFilter.length && !advertiserFilter.includes(task.advertiser)) return false;
         if (state.filters.status !== 'all' && task.status !== state.filters.status) return false;
         if (state.filters.priority !== 'all' && task.priority !== state.filters.priority) return false;
         if (state.filters.type !== 'all' && task.type !== state.filters.type) return false;
@@ -6336,7 +6371,7 @@
     function countActiveFilters() {
       let count = 0;
       if (state.filters.query.trim()) count += 1;
-      if (state.filters.advertiser !== 'all') count += 1;
+      if (getDailyAdvertiserFilter().length) count += 1;
       if (state.filters.status !== 'all') count += 1;
       if (state.filters.priority !== 'all') count += 1;
       if (state.filters.type !== 'all') count += 1;
@@ -6354,7 +6389,10 @@
       const defaultRange = getBusinessWeekRange(today);
       state.selectedDate = today;
       state.weekStart = defaultRange.start;
-      state.filters = { query: '', advertiser: 'all', status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: defaultRange.start, endDate: defaultRange.end, hideDone: false };
+      state.filters = { query: '', advertiser: 'all', advertisers: [], status: 'all', priority: 'all', type: 'all', assignee: 'all', assigneeQuery: '', startDate: defaultRange.start, endDate: defaultRange.end, hideDone: false };
+      state.weeklyAdvertiserFilter = [];
+      state.weeklyAdvertiserFilterMode = 'all';
+      state.advertiserFilter = [];
       state.sortMode = 'smart';
       setDailyTableSorts([{ field: 'time', direction: 'asc' }]);
       render();
@@ -6363,12 +6401,24 @@
 
     function renderOptions() {
       const advertisers = getSelectableAdvertisers();
-      if (state.filters.advertiser !== 'all' && !advertisers.includes(state.filters.advertiser)) state.filters.advertiser = 'all';
+      const dailyAdvertiserFilter = syncDailyAdvertiserFilterOptions(advertisers);
       dom.filterPriority.value = state.filters.priority;
 
-      const advertiserOptions = advertisers.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-      dom.filterAdvertiser.innerHTML = `<option value="all">광고주 전체</option>${advertiserOptions}`;
-      dom.filterAdvertiser.value = state.filters.advertiser;
+      if (dom.dailyAdvFilterPanel) {
+        dom.dailyAdvFilterPanel.innerHTML = advertisers.length
+          ? advertisers.map(advertiser => `<label class="assignee-ms-item"><input type="checkbox" data-daily-adv-filter="${escapeHtml(advertiser)}" ${dailyAdvertiserFilter.includes(advertiser) ? 'checked' : ''} /><span>${escapeHtml(advertiser)}</span></label>`).join('')
+          : `<span style="padding:10px 14px;color:var(--muted);font-size:12px;display:block;">광고주 없음</span>`;
+      }
+      if (dom.dailyAdvFilterTrigger) {
+        dom.dailyAdvFilterTrigger.textContent = dailyAdvertiserFilter.length
+          ? `${dailyAdvertiserFilter.length}개 광고주 선택`
+          : '광고주 선택';
+      }
+      if (dom.dailyAdvAllBtn) {
+        const isAllAdvertisers = dailyAdvertiserFilter.length === 0;
+        dom.dailyAdvAllBtn.classList.toggle('active', isAllAdvertisers);
+        dom.dailyAdvAllBtn.setAttribute('aria-pressed', String(isAllAdvertisers));
+      }
       dom.advertiserList.innerHTML = advertisers.map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
       syncAssigneeFilterUI();
       updateFilterBadge();
@@ -6686,12 +6736,6 @@
     }
 
     function getWeeklyAdvertisersForMode(allAdvertisers, weeklyTasks, visibleTasks) {
-      if (state.weeklyAdvertiserFilterMode === 'mine') {
-        const myAdvertisers = new Set(weeklyTasks
-          .filter(task => task.assignee === CURRENT_USER)
-          .map(task => task.advertiser));
-        return allAdvertisers.filter(name => myAdvertisers.has(name));
-      }
       if (state.weeklyAdvertiserFilterMode === 'selected') {
         return allAdvertisers.filter(name => state.weeklyAdvertiserFilter.includes(name));
       }
@@ -6703,6 +6747,9 @@
       const tasks = weeklyTasks.filter(matchesAssigneeFilter);
       const weekDates = getWeekDates();
       const allAdvertisers = getSelectableAdvertisers();
+      if (!['all', 'selected'].includes(state.weeklyAdvertiserFilterMode)) {
+        state.weeklyAdvertiserFilterMode = 'all';
+      }
       if (state.weeklyAdvertiserFilterMode === 'selected' && !state.weeklyAdvertiserFilter.length) {
         state.weeklyAdvertiserFilterMode = 'all';
       }
@@ -6720,11 +6767,6 @@
         const isAllAdvertisers = state.weeklyAdvertiserFilterMode === 'all';
         dom.weeklyAdvAllBtn.classList.toggle('active', isAllAdvertisers);
         dom.weeklyAdvAllBtn.setAttribute('aria-pressed', String(isAllAdvertisers));
-      }
-      if (dom.weeklyAdvMineBtn) {
-        const isMyAdvertisers = state.weeklyAdvertiserFilterMode === 'mine';
-        dom.weeklyAdvMineBtn.classList.toggle('active', isMyAdvertisers);
-        dom.weeklyAdvMineBtn.setAttribute('aria-pressed', String(isMyAdvertisers));
       }
       const advertisers = getWeeklyAdvertisersForMode(allAdvertisers, weeklyTasks, tasks);
 
@@ -8808,6 +8850,20 @@
           dom.advFilterTrigger.setAttribute('aria-expanded', String(!hidden));
           return;
         }
+        if (action === 'toggle-daily-adv-filter') {
+          if (!dom.dailyAdvFilterPanel) return;
+          const hidden = dom.dailyAdvFilterPanel.hidden;
+          dom.dailyAdvFilterPanel.hidden = !hidden;
+          dom.dailyAdvFilterTrigger.setAttribute('aria-expanded', String(!hidden));
+          return;
+        }
+        if (action === 'clear-daily-adv-filter') {
+          setDailyAdvertiserFilter([]);
+          if (dom.dailyAdvFilterPanel) dom.dailyAdvFilterPanel.hidden = true;
+          if (dom.dailyAdvFilterTrigger) dom.dailyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
+          renderDailyOnly({ refreshShell: false, refreshOptions: true, refreshStats: true, animate: false });
+          return;
+        }
         if (action === 'toggle-weekly-adv-filter') {
           if (!dom.weeklyAdvFilterPanel) return;
           const hidden = dom.weeklyAdvFilterPanel.hidden;
@@ -8818,14 +8874,6 @@
         if (action === 'clear-weekly-adv-filter') {
           state.weeklyAdvertiserFilter = [];
           state.weeklyAdvertiserFilterMode = 'all';
-          if (dom.weeklyAdvFilterPanel) dom.weeklyAdvFilterPanel.hidden = true;
-          if (dom.weeklyAdvFilterTrigger) dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
-          renderWeekly();
-          return;
-        }
-        if (action === 'filter-my-weekly-advertisers') {
-          state.weeklyAdvertiserFilter = [];
-          state.weeklyAdvertiserFilterMode = 'mine';
           if (dom.weeklyAdvFilterPanel) dom.weeklyAdvFilterPanel.hidden = true;
           if (dom.weeklyAdvFilterTrigger) dom.weeklyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
           renderWeekly();
@@ -8846,6 +8894,20 @@
 
       document.addEventListener('change', event => {
         if (event.target.closest('.is-readonly')) return;
+        const dailyAdvFilterCheck = event.target.closest('[data-daily-adv-filter]');
+        if (dailyAdvFilterCheck && dailyAdvFilterCheck.type === 'checkbox') {
+          const advertiser = dailyAdvFilterCheck.dataset.dailyAdvFilter;
+          const selected = getDailyAdvertiserFilter();
+          if (dailyAdvFilterCheck.checked) {
+            if (!selected.includes(advertiser)) selected.push(advertiser);
+          } else {
+            const index = selected.indexOf(advertiser);
+            if (index >= 0) selected.splice(index, 1);
+          }
+          setDailyAdvertiserFilter(selected);
+          renderDailyOnly({ refreshShell: false, refreshOptions: true, refreshStats: true, animate: false });
+          return;
+        }
         // Advertiser filter checkbox
         const advFilterCheck = event.target.closest('[data-adv-filter]');
         if (advFilterCheck && advFilterCheck.type === 'checkbox') {
@@ -8944,6 +9006,12 @@
           closeAdvertiserPicker();
         }
         // Close advertiser filter panel on outside click
+        if (dom.dailyAdvFilterPanel && !dom.dailyAdvFilterPanel.hidden &&
+            !dom.dailyAdvFilterPanel.contains(event.target) &&
+            !event.target.closest('[data-action="toggle-daily-adv-filter"]')) {
+          dom.dailyAdvFilterPanel.hidden = true;
+          if (dom.dailyAdvFilterTrigger) dom.dailyAdvFilterTrigger.setAttribute('aria-expanded', 'false');
+        }
         if (dom.advFilterPanel && !dom.advFilterPanel.hidden &&
             !dom.advFilterPanel.contains(event.target) &&
             !event.target.closest('[data-action="toggle-adv-filter"]')) {
@@ -9278,7 +9346,6 @@
           hideTaskAdvertiserSuggestions();
         }, 140);
       });
-      dom.filterAdvertiser.addEventListener('change', event => { state.filters.advertiser = event.target.value; render(); });
       dom.filterStatus.addEventListener('change', event => { state.filters.status = event.target.value; render(); });
       dom.filterPriority.addEventListener('change', event => { state.filters.priority = event.target.value; render(); });
       dom.hideDone.addEventListener('change', event => { state.filters.hideDone = event.target.checked; render(); });
